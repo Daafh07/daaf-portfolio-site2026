@@ -36,7 +36,8 @@ src/
     introduction/         The section after the hero: photo fan (with its reveal and hover, all in fanMotion.ts) and the introduction text
     projects/             "Selected Projects": the grid, a hand-fitted tile (ProjectTile) and the standard tile for new projects (GenericTile)
     services/             "How I can help": the dock of five blobs with the panel of the one picked, and the four steps that open while you scroll
-    statement/            The statement: the screen stays still while it types itself out, with pink dots on turning circles behind it (StatementParticles, own canvas code) and a wave that blows them away
+    statement/            The statement: the screen stays still while it types itself out, with a shape of pink dots behind it that takes the next shape as you scroll, and a wave that blows the dots away
+    particles/            Particles, from Bencho (MIT, bencho.dev/licence): a shape made of dots that the pointer pushes away and a press throws out. Changes made here are marked "Added here" in the file
     about/                "How I got here": the story and the facts next to it
     motion/               Reveal (lifts content in when it scrolls into view) and ParallaxGrid (the columns of the project grid drift while you scroll)
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
