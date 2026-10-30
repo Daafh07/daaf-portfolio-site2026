@@ -37,8 +37,10 @@ src/
     projects/             "Selected Projects": the grid, a hand-fitted tile (ProjectTile) and the standard tile for new projects (GenericTile)
     services/             "How I can help": the dock of five blobs with the panel of the one picked, and the four steps that open while you scroll
     statement/            The statement: the screen stays still while it types itself out, with pink dots on turning circles behind it (StatementParticles: the dots behave like Bencho's Particles) and a wave that blows them away
-    about/                "How I got here": the story and the facts next to it
     experience/           "Work experience": the timeline, whose line draws itself as you scroll (the copy is in data/experience.ts)
+    outside/              "Outside the browser": the bento of five tiles
+    contact/              "Let's build something" (data/contact.ts has the email and the two links) and the closing wordmark
+    Footer.tsx            The footer on every page: pages, the projects (from Supabase), elsewhere, colophon
     tools/                "What I build with": the tools as loose outlined blobs that the pointer pushes and a click throws out (data/tools.ts)
     motion/               Reveal (lifts content in when it scrolls into view) and ParallaxGrid (the columns of the project grid drift while you scroll)
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
@@ -56,6 +58,7 @@ public/
   projects/<slug>/        Artwork of one tile: blob, logo, hover preview, badge, arrow
   services/               The five blobs of the dock
   tools/                  The eleven outlined blob shapes of the tool wall
+  outside/                Photo and icons of the bento
 ```
 
 ## The intro

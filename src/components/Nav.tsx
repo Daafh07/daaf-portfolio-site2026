@@ -11,7 +11,6 @@ import { INTRO } from "@/components/intro/introConfig";
 const LINKS = [
   { href: "/#work", label: "Work" },
   { href: "/#services", label: "Services" },
-  { href: "/#about", label: "About" },
   { href: "/#experience", label: "Experience" },
 ];
 

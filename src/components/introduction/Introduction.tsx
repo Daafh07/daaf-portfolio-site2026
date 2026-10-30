@@ -2,7 +2,7 @@ import { BlobButton } from "@/components/BlobButton";
 import { PhotoFan } from "./PhotoFan";
 
 // The section right after the hero: the photo fan and a short introduction.
-// "More" and "Work experience" point at sections that are not built yet.
+// The button leads to "Work experience".
 export function Introduction() {
   return (
     <section id="introduction" className="overflow-x-clip pb-24">
@@ -18,9 +18,6 @@ export function Introduction() {
           unexpected.
         </p>
         <div className="mt-[18px] flex flex-wrap gap-3 md:mt-7">
-          <BlobButton href="#about" className="min-w-[100px]">
-            More
-          </BlobButton>
           <BlobButton href="#experience">Work experience</BlobButton>
         </div>
       </div>
