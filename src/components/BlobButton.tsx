@@ -7,6 +7,7 @@ type BlobButtonProps = ComponentProps<"a">;
 export function BlobButton({ className = "", children, ...props }: BlobButtonProps) {
   return (
     <a
+      data-glass-snap
       className={`group relative inline-flex h-[38px] items-center justify-center px-7 font-blur text-[15px] leading-none text-bg transition-transform duration-150 ease-out active:scale-[0.97] ${className}`}
       {...props}
     >
@@ -19,7 +20,7 @@ export function BlobButton({ className = "", children, ...props }: BlobButtonPro
       />
       {/* The blob sits 1px lower than the middle of the button (as in the design), so the label
           goes down a little too: measured, it was 1.4px above the middle of the blob. */}
-      <span className="relative top-[1.5px]">{children}</span>
+      <span className="relative top-[1.5px] inline-flex items-center gap-3">{children}</span>
     </a>
   );
 }

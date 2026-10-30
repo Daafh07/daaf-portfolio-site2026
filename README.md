@@ -29,15 +29,18 @@ npm run dev        # http://localhost:4000
 
 ```
 src/
-  app/                    Routes, root layout (fonts, intro gate script), global CSS and tokens
+  app/                    Routes (home, /projects/[slug]), root layout (fonts, intro gate script), global CSS and tokens
   components/
     hero/                 The hero: wordmark and the six floating icons (positions in stickers.ts)
     intro/                The intro, see below
     introduction/         The section after the hero: photo fan (with its reveal and hover, all in fanMotion.ts) and the introduction text
+    projects/             "Selected Projects": the grid of six tiles, and one tile (ProjectTile) with its hover
+    motion/               Reveal: lifts its content in when it scrolls into view
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
     Nav.tsx               Fixed menu: out of sight while the hero is on screen, fades in once it has scrolled behind the bar (always visible on pages without a hero)
     BlobButton.tsx        Blob-shaped button
     SoundToggle.tsx       Sound on/off
+  data/                   projects.ts: the projects, with where everything sits in a tile (later from Supabase)
   lib/
     glass/                WebGL lens (lens.ts), the painter that redraws what lies under it (scene.ts) and the magnet/snap logic (magnet.ts)
     sound/                Web Audio engine, the sound designs (no audio files) and the vibration that goes with them
@@ -45,6 +48,7 @@ src/
 public/
   hero/                   Icons around the wordmark
   ui/                     Shared UI artwork
+  projects/<slug>/        Artwork of one tile: blob, logo, hover preview, badge, arrow
 ```
 
 ## The intro
