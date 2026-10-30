@@ -1,6 +1,6 @@
 import { Reveal } from "@/components/motion/Reveal";
 import { ProcessAccordion } from "./ProcessAccordion";
-import { ServicesDock } from "./ServicesDock";
+import { ServicesShowcase } from "./ServicesShowcase";
 
 // "How I can help": what I make (the dock) and how I work (the four steps).
 export function HowICanHelp() {
@@ -14,7 +14,7 @@ export function HowICanHelp() {
       </Reveal>
 
       <Reveal className="mt-6 md:mt-9">
-        <ServicesDock />
+        <ServicesShowcase />
       </Reveal>
 
       <Reveal className="mt-4 md:mt-[60px]">

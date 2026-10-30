@@ -13,14 +13,35 @@ export type Service = {
   inset: Inset;
   /** The type is smaller on the long word. */
   size: number;
+  /** The colour of the blob. */
+  color: string;
+  /** What shows when the blob is picked. This copy is a first draft, not from the design. */
+  lead: string;
+  body: string;
+  builds: string[];
 };
 
 export const SERVICES: Service[] = [
-  { name: "Websites", lines: ["Web", "sites"], word: "Web", src: "/services/websites.svg", inset: [0.45, 0.49, 0.53, 0.63], size: 27 },
-  { name: "Webapps", lines: ["Web", "apps"], word: "App", src: "/services/webapps.svg", inset: [1.44, 1.23, 1.12, 0.64], size: 27 },
-  { name: "Mobile apps", lines: ["Mobile", "apps"], word: "iOS", src: "/services/mobile-apps.svg", inset: [1.33, 2.02, 0.52, 1.51], size: 27 },
-  { name: "Webgames", lines: ["Web", "games"], word: "Play", src: "/services/webgames.svg", inset: [0.45, 0.49, 0.53, 0.63], size: 27 },
-  { name: "AI automation", lines: ["AI", "automation"], word: "AI", src: "/services/ai-automation.svg", inset: [1.44, 1.23, 1.12, 0.64], size: 19 },
+  { name: "Websites", lines: ["Web", "sites"], word: "Web", src: "/services/websites.svg", inset: [0.45, 0.49, 0.53, 0.63], size: 27, color: "#d1ff00",
+    lead: "Sites that load fast and feel alive.",
+    body: "Portfolios, landing pages and company sites that look like you and work on every screen. Designed and built by one person, so nothing gets lost in between.",
+    builds: ["Portfolios and landing pages", "Company sites with a CMS", "Motion that has a reason"] },
+  { name: "Webapps", lines: ["Web", "apps"], word: "App", src: "/services/webapps.svg", inset: [1.44, 1.23, 1.12, 0.64], size: 27, color: "#e19fff",
+    lead: "Tools people actually want to open.",
+    body: "Dashboards, platforms and small products with accounts and data behind them. I design the flow and build the front and the back end.",
+    builds: ["Dashboards and platforms", "Logins, accounts and data", "Links to the tools you already use"] },
+  { name: "Mobile apps", lines: ["Mobile", "apps"], word: "iOS", src: "/services/mobile-apps.svg", inset: [1.33, 2.02, 0.52, 1.51], size: 27, color: "#f9007e",
+    lead: "Apps that feel at home on a phone.",
+    body: "React Native and Expo apps for iOS and Android from one codebase, with gestures and motion that feel native.",
+    builds: ["iOS and Android from one codebase", "Gestures, haptics and smooth motion", "A back end and notifications when needed"] },
+  { name: "Webgames", lines: ["Web", "games"], word: "Play", src: "/services/webgames.svg", inset: [0.45, 0.49, 0.53, 0.63], size: 27, color: "#5a82ff",
+    lead: "Play as a way to explain things.",
+    body: "Small games and playful experiences in the browser: a toy for a brand, a campaign, or something that makes people stay a little longer.",
+    builds: ["Browser games on canvas and WebGL", "Playful campaign sites", "Sound and haptics for feel"] },
+  { name: "AI automation", lines: ["AI", "automation"], word: "AI", src: "/services/ai-automation.svg", inset: [1.44, 1.23, 1.12, 0.64], size: 19, color: "#6fcfa4",
+    lead: "Let the boring parts run themselves.",
+    body: "Workflows and assistants that take repeat work off your hands: sorting, summarising, answering, filing. Built so a person can always check them.",
+    builds: ["Automations between your tools", "Assistants that answer from your content", "Reports and summaries on a schedule"] },
 ];
 
 export type Step = {
