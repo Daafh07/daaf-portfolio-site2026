@@ -117,11 +117,54 @@ function createVoice(ctx: AudioContext, out: AudioNode): Voice {
         biquad.disconnect();
         gain.disconnect();
       };
-      // Start at a random point so repeated bursts do not sound identical.
-      source.start(start, Math.random() * (source.buffer.duration - duration - 0.05));
+      // Start at a random point so repeated bursts do not sound identical. The noise loops, so a
+      // burst can be longer than the second of noise there is (it is random, so the seam is silent).
+      source.loop = true;
+      source.start(start, Math.random() * source.buffer.duration);
       source.stop(start + duration + 0.02);
     },
   };
+}
+
+// The continuous layer behind sound.swirl(): noise through a bandpass filter, whose frequency is
+// swept by a slow oscillator.
+type Swirl = { source: AudioBufferSourceNode; filter: BiquadFilterNode; gain: GainNode; lfo: OscillatorNode; depth: GainNode; stopTimer: number };
+let swirlLayer: Swirl | null = null;
+
+function createSwirl(ctx: AudioContext, out: AudioNode): Swirl {
+  const source = ctx.createBufferSource();
+  source.buffer = getNoise(ctx);
+  source.loop = true;
+  const filter = ctx.createBiquadFilter();
+  filter.type = "bandpass";
+  filter.Q.value = 0.9;
+  filter.frequency.value = 600;
+  const gain = ctx.createGain();
+  gain.gain.value = 0;
+  const lfo = ctx.createOscillator();
+  lfo.frequency.value = 2;
+  const depth = ctx.createGain();
+  depth.gain.value = 200;
+  lfo.connect(depth).connect(filter.frequency);
+  source.connect(filter).connect(gain).connect(out);
+  source.start();
+  lfo.start();
+  return { source, filter, gain, lfo, depth, stopTimer: 0 };
+}
+
+function stopSwirl() {
+  if (!swirlLayer) return;
+  const { source, lfo, filter, gain, depth } = swirlLayer;
+  try {
+    source.stop();
+    lfo.stop();
+  } catch {}
+  source.disconnect();
+  lfo.disconnect();
+  depth.disconnect();
+  filter.disconnect();
+  gain.disconnect();
+  swirlLayer = null;
 }
 
 function notify() {
@@ -161,6 +204,35 @@ export const sound = {
     if (audible) spec.play(createVoice(ctx, out), strength);
   },
 
+  /**
+   * A continuous layer, for something that keeps moving (the circles of the statement turning as you
+   * scroll): filtered noise whose pitch and loudness follow `level` (0 to 1), with a slow sweep in
+   * it that gets faster the faster it goes, so it sounds like spinning. Call it again with a new
+   * level whenever the movement changes, and with 0 (or stop calling) when it stops; it fades out and
+   * takes itself down. Silent while the audio is not running, like play().
+   */
+  swirl(level: number) {
+    const ctx = context;
+    if (!enabled || document.visibilityState !== "visible" || !ctx || !output || ctx.state !== "running") return;
+    const amount = Number.isFinite(level) ? Math.min(1, Math.max(0, level)) : 0;
+    if (swirlLayer) window.clearTimeout(swirlLayer.stopTimer);
+    if (amount < 0.02) {
+      if (swirlLayer) {
+        swirlLayer.gain.gain.setTargetAtTime(0, ctx.currentTime, 0.12);
+        swirlLayer.stopTimer = window.setTimeout(stopSwirl, 700);
+      }
+      return;
+    }
+    if (!swirlLayer) swirlLayer = createSwirl(ctx, output);
+    const now = ctx.currentTime;
+    const layer = swirlLayer;
+    layer.gain.gain.setTargetAtTime(0.004 + amount * 0.034, now, 0.08);
+    layer.filter.frequency.setTargetAtTime(380 + amount * 1500, now, 0.1);
+    layer.lfo.frequency.setTargetAtTime(1 + amount * 5.5, now, 0.1);
+    layer.depth.gain.setTargetAtTime((380 + amount * 1500) * 0.4, now, 0.1);
+    layer.stopTimer = window.setTimeout(() => sound.swirl(0), 160); // no new call within 160 ms: it has stopped
+  },
+
   isEnabled: () => enabled,
 
   toggle() {
@@ -169,6 +241,7 @@ export const sound = {
       localStorage.setItem(STORAGE_KEY, enabled ? "on" : "off");
     } catch {}
     lastPlayed.clear();
+    if (!enabled) stopSwirl();
     const ctx = enabled ? getContext() : context;
     if (ctx && output) {
       output.gain.cancelScheduledValues(ctx.currentTime);

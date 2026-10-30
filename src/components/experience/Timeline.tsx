@@ -3,6 +3,7 @@
 import { useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 import { useEffect, useRef, useState } from "react";
 import type { Entry } from "@/data/experience";
+import { sound } from "@/lib/sound/engine";
 
 // The timeline, with a line that draws itself as you scroll: it is at the height of the 60% line of
 // the screen, fills every row it has passed, and the row it is in is the one that is lit (white,
@@ -17,10 +18,11 @@ export function Timeline({ entries }: { entries: Entry[] }) {
   const list = useRef<HTMLOListElement>(null);
   const rows = useRef<(HTMLLIElement | null)[]>([]);
   const [active, setActive] = useState(0);
+  const heard = useRef(0); // the row the sound last played for
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: list, offset: [`start ${LINE}`, `end ${LINE}`] });
 
-  const follow = (progress: number) => {
+  const follow = (progress: number, loud = false) => {
     const element = list.current;
     if (!element) return;
     const y = reduced ? Infinity : progress * element.offsetHeight; // how far down the list the line is
@@ -33,8 +35,11 @@ export function Timeline({ entries }: { entries: Entry[] }) {
       if (row.offsetTop <= y) current = index;
     });
     setActive((previous) => (previous === current ? previous : current));
+    // The line reaches the next row: a soft pluck, a note higher for every row (only while scrolling).
+    if (loud && current !== heard.current) sound.play("timelineStep", current / (entries.length - 1));
+    heard.current = current;
   };
-  useMotionValueEvent(scrollYProgress, "change", follow);
+  useMotionValueEvent(scrollYProgress, "change", (progress) => follow(progress, true));
   // Where the page already is when it loads, and when the rows change size.
   useEffect(() => {
     follow(scrollYProgress.get());

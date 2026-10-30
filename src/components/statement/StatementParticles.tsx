@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import { sound } from "@/lib/sound/engine";
 
 /* ══ The statement's backdrop: circles made of dots ═══════════
    The behaviour and the numbers of the dots come from Bencho's Particles (bencho.dev/blocks/particles,
@@ -255,6 +256,7 @@ export const StatementParticles = forwardRef<ParticlesHandle, { still?: boolean 
         dot.vx += (dx / dd) * f;
         dot.vy += (dy / dd) * f;
       }
+      sound.play("scatter", 0.7);
       run();
     };
 

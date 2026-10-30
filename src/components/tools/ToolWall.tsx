@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { insetStyle } from "@/components/projects/tileStyle";
 import { TOOL_HEIGHT, TOOLS } from "@/data/tools";
+import { sound } from "@/lib/sound/engine";
 
 // The tools as loose blobs. Each one lies where the normal layout puts it (so the wall reads, wraps
 // and prints like a list), and is moved from there by a spring: the pointer pushes the ones it passes
@@ -12,6 +13,8 @@ import { TOOL_HEIGHT, TOOLS } from "@/data/tools";
 // raised to the number of frames, so a dropped frame costs the same energy as the frames it replaced.
 // The blobs are real elements that are moved with a transform, so they stay sharp, selectable and
 // readable; the loop runs only while something moves.
+// Sounds: a knock when the pointer sets a blob moving, a click when two blobs meet (louder the harder),
+// a whoosh when a click throws them, and a soft chord when they have all found their places again.
 const PULL = 0.05; // how hard the spring pulls a blob home (per frame)
 const KEEP = 0.84; // how much of its speed it keeps each frame
 const REACH = 150; // px: the pointer pushes blobs whose middle is within this
@@ -33,6 +36,8 @@ export function ToolWall() {
     let pointer: { x: number; y: number } | null = null;
     let frame = 0;
     let prev = 0;
+    let touching = new Set<number>(); // pairs that overlapped in the last frame
+    let scattered = false; // a click has thrown the blobs and they are not all home yet
 
     // Where each blob lies in the layout (its middle, in the list's own coordinates).
     const measure = () => {
@@ -50,6 +55,8 @@ export function ToolWall() {
       const dt = prev ? clamp((t - prev) / 16.67, 0, 2.5) : 1;
       prev = t;
       let busy = !!pointer;
+      const meeting = new Set<number>();
+      let farthest = 0;
 
       for (const [i, a] of bodies.entries()) {
         if (pointer) {
@@ -58,8 +65,10 @@ export function ToolWall() {
           const dd = Math.hypot(dx, dy);
           if (dd < REACH && dd > 0.01) {
             const f = Math.pow(1 - dd / REACH, 2) * PUSH;
+            const before = Math.hypot(a.vx, a.vy);
             a.vx += (dx / dd) * f * dt;
             a.vy += (dy / dd) * f * dt;
+            if (before < 0.6 && Math.hypot(a.vx, a.vy) > 1.4) sound.play("toolNudge", i / (bodies.length - 1));
           }
         }
         // Blobs that meet push each other aside, along the way that overlaps least.
@@ -68,6 +77,10 @@ export function ToolWall() {
           const overlapX = (a.w + b.w) / 2 + 6 - Math.abs(a.x - b.x);
           const overlapY = (a.h + b.h) / 2 + 6 - Math.abs(a.y - b.y);
           if (overlapX <= 0 || overlapY <= 0) continue;
+          const key = i * 100 + j;
+          meeting.add(key);
+          const speed = Math.hypot(a.vx - b.vx, a.vy - b.vy);
+          if (!touching.has(key) && speed > 2.5) sound.play("toolClack", Math.min(1, (speed - 2.5) / 8));
           const push = 0.06 * dt;
           if (overlapX < overlapY) {
             const s = Math.sign(a.x - b.x) || 1;
@@ -90,12 +103,19 @@ export function ToolWall() {
           a.vy = 0;
         } else busy = true;
 
+        farthest = Math.max(farthest, Math.hypot(a.x - a.hx, a.y - a.hy));
+
         // Moved by a transform, with a little lean into the way it is going.
         const item = items.current[i];
         if (item) {
           const moved = a.x !== a.hx || a.y !== a.hy;
           item.style.transform = moved ? `translate3d(${(a.x - a.hx).toFixed(2)}px, ${(a.y - a.hy).toFixed(2)}px, 0) rotate(${clamp(a.vx * 0.9, -14, 14).toFixed(2)}deg)` : "";
         }
+      }
+      touching = meeting;
+      if (scattered && farthest < 4) {
+        scattered = false;
+        sound.play("toolGather");
       }
       frame = busy ? requestAnimationFrame(tick) : 0;
     };
@@ -121,6 +141,7 @@ export function ToolWall() {
     // A click (or a tap) throws the blobs near it out, away from the point.
     const press = (event: MouseEvent) => {
       const at = local(event);
+      let thrown = 0;
       for (const body of bodies) {
         const dx = body.x - at.x;
         const dy = body.y - at.y;
@@ -129,6 +150,11 @@ export function ToolWall() {
         const f = (1 - dd / SHOCK) * 30;
         body.vx += (dx / dd) * f;
         body.vy += (dy / dd) * f;
+        thrown++;
+      }
+      if (thrown) {
+        scattered = true;
+        sound.play("scatter", Math.min(1, thrown / 8));
       }
       run();
     };

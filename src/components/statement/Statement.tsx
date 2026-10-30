@@ -2,6 +2,7 @@
 
 import { useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 import { Fragment, useEffect, useRef } from "react";
+import { sound } from "@/lib/sound/engine";
 import { StatementParticles, type ParticlesHandle } from "./StatementParticles";
 
 // The one sentence that says what I stand for, in the heading font, with the last words in the
@@ -57,7 +58,25 @@ export function Statement() {
     next?.setAttribute("data-cursor", "");
     cursor.current = next;
   };
-  useMotionValueEvent(scrollYProgress, "change", show);
+  // The sounds follow the scrolling (not the first look at where the page is): a key click for every
+  // letter that gets typed, a layer that sounds like spinning, faster as you scroll faster (the
+  // circles turn with it), and a deep swell when the sentence is complete and the wave runs.
+  const heard = useRef({ time: 0, q: 0, letters: 0, done: false });
+  const listen = (progress: number) => {
+    const q = reduced ? 1 : Math.min(1, progress / TYPED_BY);
+    const last = heard.current;
+    const now = performance.now();
+    if (last.time) sound.swirl(Math.min(1, (Math.abs(q - last.q) / Math.max(16, now - last.time)) * 1000 / 0.9)); // 0.9 of the sentence per second is full speed
+    const letters = Math.floor(q * TOTAL);
+    if (letters > last.letters && q < 1) sound.play("typeKey", Math.random());
+    const done = q >= 1 && !reduced;
+    if (done && !last.done) sound.play("statementWave");
+    heard.current = { time: now, q, letters, done };
+  };
+  useMotionValueEvent(scrollYProgress, "change", (progress) => {
+    show(progress);
+    listen(progress);
+  });
   // Where the page already is when it loads (a link to a later section, a refresh part way down).
   useEffect(() => show(scrollYProgress.get()));
 

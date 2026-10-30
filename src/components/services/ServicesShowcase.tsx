@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { useState } from "react";
 import { SERVICES } from "@/data/services";
+import { sound } from "@/lib/sound/engine";
 import { ServicePanel } from "./ServicePanel";
 import { ServicesDock } from "./ServicesDock";
 
@@ -14,6 +15,7 @@ export function ServicesShowcase() {
   const pick = (index: number) => {
     const next = picked === index ? null : index;
     setPicked(next);
+    sound.play(next === null ? "dockPut" : "dockPick", index / (SERVICES.length - 1));
     if (next !== null) setShown(next);
   };
 

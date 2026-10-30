@@ -1,9 +1,10 @@
 "use client";
 
-import { motion, useMotionValue, useSpring, useTransform, type MotionValue } from "motion/react";
+import { motion, useMotionValue, useMotionValueEvent, useSpring, useTransform, type MotionValue } from "motion/react";
 import { useEffect, useRef } from "react";
 import { SERVICES, type Service } from "@/data/services";
 import { insetStyle } from "@/components/projects/tileStyle";
+import { sound } from "@/lib/sound/engine";
 
 // The five things I make, as in the design: blobs in a row. On desktop they work like a dock:
 // the one under the pointer grows (142px to 187px in Figma) and lifts, and its neighbours follow
@@ -29,6 +30,13 @@ function DockItem({ service, index, pointer, picked, onPick }: { service: Servic
   const chosen = useMotionValue(0);
   useEffect(() => chosen.set(picked === index ? PICKED : 0), [picked, index, chosen]);
   const reach = useTransform([near, chosen], ([a, b]: number[]) => Math.max(a, b));
+  // A small bubble when the pointer arrives on this blob (each blob its own note).
+  const arrived = useRef(false);
+  useMotionValueEvent(near, "change", (value) => {
+    const on = value > 0.7;
+    if (on && !arrived.current) sound.play("dockHover", index / (SERVICES.length - 1));
+    arrived.current = on;
+  });
   const t = useSpring(reach, { stiffness: 320, damping: 28, mass: 0.7 });
   const scale = useTransform(t, (v) => 1 + GROW * v);
   const y = useTransform(t, (v) => LIFT * v);

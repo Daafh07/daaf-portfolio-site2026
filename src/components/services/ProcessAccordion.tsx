@@ -3,6 +3,7 @@
 import { useMotionValueEvent, useScroll } from "motion/react";
 import { useId, useRef, useState } from "react";
 import { STEPS } from "@/data/services";
+import { sound } from "@/lib/sound/engine";
 
 // The four steps of how I work. The accordion stays in view (sticky) while the page scrolls past
 // it, and the steps open one after the other as you go: scrolling is what moves it on. A click on
@@ -19,8 +20,13 @@ export function ProcessAccordion() {
     target: track,
     offset: [`start ${STICKY_TOP}px`, "end end"],
   });
+  const current = useRef(0);
   useMotionValueEvent(scrollYProgress, "change", (progress) => {
-    setOpen(Math.min(STEPS.length - 1, Math.max(0, Math.floor(progress * STEPS.length))));
+    const next = Math.min(STEPS.length - 1, Math.max(0, Math.floor(progress * STEPS.length)));
+    if (next === current.current) return;
+    current.current = next;
+    setOpen(next);
+    sound.play("stepOpen", next / (STEPS.length - 1)); // a note higher with every step
   });
 
   const goTo = (index: number) => {

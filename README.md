@@ -48,7 +48,7 @@ src/
   data/                   types.ts: the shape of a project; getProjects.ts: reads them from Supabase; layout.ts: where a tile sits, from its number in the list; services.ts: the copy of "How I can help"; experience.ts and tools.ts: the timeline and the tool wall
   lib/
     glass/                WebGL lens (lens.ts), the painter that redraws what lies under it (scene.ts) and the magnet/snap logic (magnet.ts)
-    sound/                Web Audio engine, the sound designs (no audio files) and the vibration that goes with them
+    sound/                Web Audio engine, the sound designs (no audio files; one-shot sounds, and a continuous "swirl" layer that follows how fast something moves) and the vibration that goes with them
   fonts/                  Blur Bold
 public/
   hero/                   Icons around the wordmark
