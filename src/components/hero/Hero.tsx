@@ -8,7 +8,7 @@ const pct = (value: number, total: number) => `${(value / total) * 100}%`;
 // and hides the elements marked data-intro-target while it plays.
 export function Hero() {
   return (
-    <section id="top" className="relative flex min-h-svh items-center justify-center overflow-hidden px-6">
+    <section id="top" className="relative flex min-h-[75svh] items-center justify-center overflow-hidden px-6 md:min-h-svh">
       <div
         data-hero-wordmark
         className="relative aspect-[531.375/241.236] w-full max-w-[max(531px,35.15vw)] [container-type:inline-size]"
