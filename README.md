@@ -33,12 +33,13 @@ src/
   components/
     hero/                 The hero: wordmark and the six floating icons (positions in stickers.ts)
     intro/                The intro, see below
-    GlassCursor.tsx       Liquid glass lens that follows the cursor and attaches to icons and controls
+    introduction/         The section after the hero: photo fan (with its reveal and hover, all in fanMotion.ts) and the introduction text
+    GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
     Nav.tsx               Fixed menu (built, not on the page yet)
     BlobButton.tsx        Blob-shaped button
     SoundToggle.tsx       Sound on/off
   lib/
-    glass/                WebGL lens (lens.ts) and the magnet/snap logic (magnet.ts)
+    glass/                WebGL lens (lens.ts), the painter that redraws what lies under it (scene.ts) and the magnet/snap logic (magnet.ts)
     sound/                Web Audio engine, the sound designs (no audio files) and the vibration that goes with them
   fonts/                  Blur Bold
 public/
