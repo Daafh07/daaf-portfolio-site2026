@@ -49,6 +49,16 @@ export function IntroSequence() {
     const pending = timers.current;
     const at = (seconds: number, fn: () => void) => pending.push(window.setTimeout(fn, seconds * 1000));
 
+    // The intro is measured and drawn in screen coordinates, so it has to play with the page at the
+    // top. A refreshed page can come back scrolled (the browser restores the position, also when the
+    // gate script asked it not to), and then the letters would land outside the screen. So go to the
+    // top now, and stay there until the intro is over.
+    const toTop = () => window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+    const keepAtTop = () => { if (window.scrollY !== 0) toTop(); };
+    toTop();
+    window.addEventListener("scroll", keepAtTop, { passive: true });
+    const release = () => window.removeEventListener("scroll", keepAtTop);
+
     // The letters sequence. Starts right away, or once the slingshot D hits the canvas.
     startRef.current = (measured) => {
       const t = introTimeline(measured.letters.length, measured.stickers.length);
@@ -64,6 +74,7 @@ export function IntroSequence() {
       });
       at(t.land, () => setPhase("land"));
       at(t.done, () => {
+        release();
         root.dataset.intro = "done";
         history.scrollRestoration = "auto";
         setActive(false);
@@ -73,8 +84,10 @@ export function IntroSequence() {
     // Measure only once the Blur font is in, otherwise the letter boxes are wrong.
     document.fonts.ready.then(() => {
       if (cancelled) return;
+      toTop();
       const measured = measureIntro();
       if (!measured) {
+        release();
         root.dataset.intro = "done";
         return setActive(false);
       }
@@ -85,6 +98,7 @@ export function IntroSequence() {
 
     return () => {
       cancelled = true;
+      release();
       pending.forEach(clearTimeout);
     };
   }, []);
