@@ -123,10 +123,11 @@ html:has(#top) .site-nav:not([data-past-hero]):not(:has(:focus-visible)) {
   filter: drop-shadow(0 0 6px #f9007e66);
   transition: opacity 0.5s ease;
 }
-/* Once the wave has run, the lines fade away for good (until you scroll back). */
+/* The moment the sentence is complete the lines fade away (until you scroll back), so the wave runs
+   over an empty backdrop; the wave waits for it (see its delay below). */
 [data-done] .statement-rings {
   opacity: 0;
-  transition: opacity 1.4s ease 0.6s;
+  transition: opacity 0.35s ease;
 }
 
 /* When the sentence is complete (data-done), three pink rings run out from the middle, one after
@@ -149,8 +150,8 @@ html:has(#top) .site-nav:not([data-past-hero]):not(:has(:focus-visible)) {
 [data-done] .statement-wave {
   /* It grows quickly at first and settles, but fades slowly, so the ring stays in view while it travels. */
   animation:
-    statement-wave-grow 2.8s cubic-bezier(0.22, 0.6, 0.3, 1) calc(var(--wave) * 0.3s) both,
-    statement-wave-fade 2.8s cubic-bezier(0.35, 0.1, 0.8, 0.9) calc(var(--wave) * 0.3s) both;
+    statement-wave-grow 2.8s cubic-bezier(0.22, 0.6, 0.3, 1) calc(0.4s + var(--wave) * 0.3s) both,
+    statement-wave-fade 2.8s cubic-bezier(0.35, 0.1, 0.8, 0.9) calc(0.4s + var(--wave) * 0.3s) both;
 }
 @keyframes statement-wave-grow {
   from {
