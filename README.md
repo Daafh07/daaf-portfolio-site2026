@@ -36,7 +36,7 @@ src/
     introduction/         The section after the hero: photo fan (with its reveal and hover, all in fanMotion.ts) and the introduction text
     projects/             "Selected Projects": the grid, a hand-fitted tile (ProjectTile) and the standard tile for new projects (GenericTile)
     services/             "How I can help": the dock of five blobs with the panel of the one picked, and the four steps that open while you scroll
-    statement/            The one-sentence statement
+    statement/            The statement: the screen stays still while it types itself out, with circle lines behind it and a pink wave at the end
     about/                "How I got here": the story and the facts next to it
     motion/               Reveal (lifts content in when it scrolls into view) and ParallaxGrid (the columns of the project grid drift while you scroll)
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons

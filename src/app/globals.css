@@ -104,3 +104,66 @@ html:has(#top) .site-nav:not([data-past-hero]):not(:has(:focus-visible)) {
     opacity: 1;
   }
 }
+
+/* The statement's backdrop. Ring k draws itself (a line that grows around the circle from the top)
+   once --q has passed k * 0.09, finishing over the next 0.3 of --q. */
+.statement-ring {
+  fill: none;
+  stroke: #f9007e;
+  stroke-opacity: 0.5;
+  stroke-width: 1.5px;
+  vector-effect: non-scaling-stroke;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - clamp(0, (var(--q) - var(--k) * 0.09) / 0.3, 1));
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* When the sentence is complete (data-done), three pink rings run out from the middle, one after
+   the other, and fade as they go. Taking data-done away (scrolling back) puts them away again. */
+.statement-wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 140vmax;
+  height: 140vmax;
+  margin: -70vmax 0 0 -70vmax;
+  border: 2px solid #f9007e;
+  border-radius: 9999px;
+  box-shadow:
+    0 0 70px #f9007e55,
+    inset 0 0 70px #f9007e33;
+  opacity: 0;
+  transform: scale(0);
+}
+[data-done] .statement-wave {
+  /* It grows quickly at first and settles, but fades slowly, so the ring stays in view while it travels. */
+  animation:
+    statement-wave-grow 2.8s cubic-bezier(0.22, 0.6, 0.3, 1) calc(var(--wave) * 0.3s) both,
+    statement-wave-fade 2.8s cubic-bezier(0.35, 0.1, 0.8, 0.9) calc(var(--wave) * 0.3s) both;
+}
+@keyframes statement-wave-grow {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+@keyframes statement-wave-fade {
+  from {
+    opacity: 0.95;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .statement-wave {
+    display: none;
+  }
+  .statement-ring {
+    stroke-dashoffset: 0;
+  }
+}
+

@@ -4,8 +4,10 @@ import { useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 import { Fragment, useEffect, useRef } from "react";
 
 // The one sentence that says what I stand for, in the heading font, with the last words in the
-// pink of the first project. It types itself out while you scroll: letter by letter, with a pink
-// cursor at the end of what is typed.
+// pink of the first project. The screen stays put (sticky) while you scroll through it, and the
+// sentence types itself out, letter by letter, with a pink cursor. Behind it, pink circle lines
+// draw themselves one ring after the other; when the sentence is complete, a pink wave runs out
+// from the middle.
 const PARTS = [
   { text: "Most websites look like the template they came from. I would rather spend the extra week and make yours ", pink: false },
   { text: "look like you.", pink: true },
@@ -22,20 +24,29 @@ const WORDS = PARTS.flatMap(({ text, pink }) =>
 );
 const TOTAL = count;
 
+const RINGS = 8;
+const SCROLL = 150; // svh of scrolling that the screen stays still for
+const TYPED_BY = 0.72; // the sentence is complete this far into that scroll; the rest is a pause
+
 export function Statement() {
-  const text = useRef<HTMLParagraphElement>(null);
+  const track = useRef<HTMLElement>(null);
+  const stage = useRef<HTMLDivElement>(null);
   const cursor = useRef<HTMLElement | null>(null);
   const reduced = useReducedMotion();
-  // Starts when the sentence reaches 90% of the screen height, done when its end reaches 40%.
-  const { scrollYProgress } = useScroll({ target: text, offset: ["start 0.9", "end 0.4"] });
+  const { scrollYProgress } = useScroll({ target: track, offset: ["start start", "end end"] });
 
-  // The letters read one number, --typed (how many are typed, fractions included), from CSS: no
-  // re-render per letter. The cursor sits on the last letter that has begun, until all are typed.
+  // Everything reads one number from CSS, --q (0 to 1: how much of the sentence is typed, and how
+  // many ring lines are drawn): no re-render per letter. `data-done` starts the wave.
   const show = (progress: number) => {
-    const element = text.current;
+    const element = stage.current;
     if (!element) return;
-    const typed = reduced ? TOTAL : progress * TOTAL;
+    const q = reduced ? 1 : Math.min(1, progress / TYPED_BY);
+    const typed = q * TOTAL;
     element.style.setProperty("--typed", String(typed));
+    element.style.setProperty("--q", String(q));
+    if (q >= 1 && !reduced) element.setAttribute("data-done", "");
+    else element.removeAttribute("data-done");
+    // The cursor sits on the last letter that has begun, until all are typed.
     const index = typed > 0 && typed < TOTAL ? Math.min(TOTAL - 1, Math.floor(typed)) : -1;
     const next = index >= 0 ? element.querySelector<HTMLElement>(`[data-i="${index}"]`) : null;
     if (next === cursor.current) return;
@@ -48,27 +59,49 @@ export function Statement() {
   useEffect(() => show(scrollYProgress.get()));
 
   return (
-    <section aria-label="Statement" className="mx-auto w-full max-w-[1032px] px-6 pb-24 md:pt-24 md:pb-48">
-      <p
-        ref={text}
+    <section
+      ref={track}
+      aria-label="Statement"
+      style={{ "--track": `calc(100svh + ${SCROLL}svh)` } as React.CSSProperties}
+      className="h-[var(--track)] motion-reduce:h-auto"
+    >
+      <div
+        ref={stage}
         data-typing
-        aria-label={PARTS.map((part) => part.text).join("")}
-        style={{ "--typed": 0 } as React.CSSProperties}
-        className="font-blur text-[26px] leading-[34px] text-fg md:text-[36px] md:leading-[48px]"
+        style={{ "--typed": 0, "--q": 0 } as React.CSSProperties}
+        className="sticky top-0 flex h-svh items-center overflow-hidden motion-reduce:static motion-reduce:h-auto motion-reduce:py-24"
       >
-        {WORDS.map((word, wordIndex) => (
-          <Fragment key={wordIndex}>
-            {wordIndex > 0 && " "}
-            <span aria-hidden className={`inline-block ${word.pink ? "text-[#f9007e]" : ""}`}>
-              {word.letters.map(({ letter, index }) => (
-                <span key={index} data-i={index} style={{ "--i": index } as React.CSSProperties} className="typed-letter">
-                  {letter}
-                </span>
-              ))}
-            </span>
-          </Fragment>
-        ))}
-      </p>
+        {/* The circle lines: each ring draws from the top, one after the other, as you scroll. */}
+        <svg aria-hidden viewBox="0 0 1000 1000" className="pointer-events-none absolute top-1/2 left-1/2 size-[130vmax] -translate-x-1/2 -translate-y-1/2">
+          {Array.from({ length: RINGS }, (_, k) => (
+            <circle key={k} cx="500" cy="500" r={60 + k * 62} pathLength={1} className="statement-ring" style={{ "--k": k } as React.CSSProperties} />
+          ))}
+        </svg>
+        {/* The wave: rings of light that run out from the middle once the sentence is complete. */}
+        <div aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 size-0">
+          {[0, 1, 2].map((wave) => (
+            <span key={wave} className="statement-wave" style={{ "--wave": wave } as React.CSSProperties} />
+          ))}
+        </div>
+
+        <p
+          aria-label={PARTS.map((part) => part.text).join("")}
+          className="relative mx-auto w-full max-w-[1032px] px-6 font-blur text-[26px] leading-[34px] text-fg md:text-[36px] md:leading-[48px]"
+        >
+          {WORDS.map((word, wordIndex) => (
+            <Fragment key={wordIndex}>
+              {wordIndex > 0 && " "}
+              <span aria-hidden className={`inline-block ${word.pink ? "text-[#f9007e]" : ""}`}>
+                {word.letters.map(({ letter, index }) => (
+                  <span key={index} data-i={index} style={{ "--i": index } as React.CSSProperties} className="typed-letter">
+                    {letter}
+                  </span>
+                ))}
+              </span>
+            </Fragment>
+          ))}
+        </p>
+      </div>
     </section>
   );
 }
