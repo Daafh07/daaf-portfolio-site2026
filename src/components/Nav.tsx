@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef } from "react";
+import { sound } from "@/lib/sound/engine";
 import { BlobButton } from "@/components/BlobButton";
 
 // The links start with "/" so they also work from a page other than the homepage.
@@ -39,7 +40,11 @@ export function Nav() {
       }
       // Passed = no longer in sight AND above the screen (not "not reached yet", the hero is first anyway).
       observer = new IntersectionObserver(
-        ([entry]) => nav.toggleAttribute("data-past-hero", !entry.isIntersecting && entry.boundingClientRect.top < 0),
+        ([entry]) => {
+          const passed = !entry.isIntersecting && entry.boundingClientRect.top < 0;
+          if (passed && !nav.hasAttribute("data-past-hero")) sound.play("contentIn", 0.2);
+          nav.toggleAttribute("data-past-hero", passed);
+        },
         { rootMargin: `-${BAR}px 0px 0px 0px` },
       );
       observer.observe(hero);

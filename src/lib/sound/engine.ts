@@ -144,7 +144,7 @@ export const sound = {
 
   /** Play a sound and its vibration. `level` (0 to 1) is how strongly it is triggered. */
   play(name: SoundName, level = 0.5) {
-    if (!enabled) return;
+    if (!enabled || document.visibilityState !== "visible") return;
     const spec: SoundSpec = SOUNDS[name];
     const now = performance.now();
     if (now - (lastPlayed.get(name) ?? -Infinity) < spec.gap * 1000) return;

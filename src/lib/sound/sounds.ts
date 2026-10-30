@@ -87,6 +87,38 @@ export const SOUNDS = {
     },
   },
 
+  // Air under incoming content; quiet enough for staggered rows.
+  contentIn: {
+    gap: 0.04,
+    play: (v, level) => {
+      v.noise({ freq: lerp(1100, 1700, level), q: 0.5, duration: 0.23, peak: 0.014, attack: 0.035 });
+      v.tone({ from: 330, to: 440, duration: 0.18, peak: 0.009, attack: 0.025 });
+    },
+  },
+  cardDeal: {
+    gap: 0.025,
+    play: (v, level) => {
+      v.noise({ freq: lerp(1400, 2400, level), q: 0.7, duration: 0.09, peak: 0.018, attack: 0.008 });
+      v.tone({ from: lerp(440, 660, level), to: lerp(330, 495, level), duration: 0.08, peak: 0.012 });
+    },
+  },
+  glassSnap: {
+    gap: 0.12,
+    play: (v, level) => {
+      // A muted bubble: a short downward glide, without the ringing overtone.
+      const note = lerp(300, 360, level);
+      v.tone({ from: note, to: note * 0.55, duration: 0.095, peak: 0.023, attack: 0.008 });
+      v.noise({ filter: "lowpass", freq: 650, q: 0.5, duration: 0.035, peak: 0.006, attack: 0.006 });
+    },
+  },
+  glassClick: {
+    gap: 0.07,
+    play: (v) => {
+      v.tone({ from: 980, to: 620, duration: 0.065, peak: 0.032, attack: 0.002 });
+      v.noise({ freq: 2600, q: 1.2, duration: 0.018, peak: 0.009 });
+    },
+  },
+
   // The D is picked up: a soft pop with a tiny click on top.
   grab: {
     gap: 0.06,

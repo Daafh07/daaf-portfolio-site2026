@@ -3,6 +3,7 @@
 import { MotionConfig, motion, useInView } from "motion/react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { sound } from "@/lib/sound/engine";
 import { useIntroDone } from "@/components/intro/useIntroDone";
 import { FAN_MOTION, SLOTS, fanPose, stackedPose } from "./fanMotion";
 import { FAN, FAN_PHOTOS } from "./photos";
@@ -26,8 +27,11 @@ export function PhotoFan() {
   // Hovering only starts once the last card has landed.
   useEffect(() => {
     if (!revealed) return;
+    const cues = FAN_PHOTOS.map((_, index) => window.setTimeout(() => {
+      sound.play("cardDeal", index / Math.max(1, FAN_PHOTOS.length - 1));
+    }, index * FAN_MOTION.reveal.stagger * 1000));
     const timer = setTimeout(() => setDealt(true), FAN_MOTION.reveal.settle * 1000);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); cues.forEach(clearTimeout); };
   }, [revealed]);
 
   return (
