@@ -105,18 +105,28 @@ html:has(#top) .site-nav:not([data-past-hero]):not(:has(:focus-visible)) {
   }
 }
 
-/* The statement's backdrop. Ring k draws itself (a line that grows around the circle from the top)
-   once --q has passed k * 0.09, finishing over the next 0.3 of --q. */
+/* The statement's backdrop. Each ring draws itself (a line that grows around the circle from its own
+   starting point, clockwise or not) from --start of --q, over --span of it. The stroke is a gradient
+   that fades along the ring, and has a soft glow. */
 .statement-ring {
   fill: none;
-  stroke: #f9007e;
-  stroke-opacity: 0.5;
-  stroke-width: 1.5px;
+  stroke-width: 3px;
+  stroke-linecap: round;
   vector-effect: non-scaling-stroke;
   stroke-dasharray: 1;
-  stroke-dashoffset: calc(1 - clamp(0, (var(--q) - var(--k) * 0.09) / 0.3, 1));
-  transform: rotate(-90deg);
-  transform-origin: 50% 50%;
+  stroke-dashoffset: calc(1 - clamp(0, (var(--q) - var(--start)) / var(--span), 1));
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: rotate(calc(var(--rot) * 1deg)) scaleY(var(--dir));
+}
+.statement-rings {
+  filter: drop-shadow(0 0 6px #f9007e66);
+  transition: opacity 0.5s ease;
+}
+/* Once the wave has run, the lines fade away for good (until you scroll back). */
+[data-done] .statement-rings {
+  opacity: 0;
+  transition: opacity 1.4s ease 0.6s;
 }
 
 /* When the sentence is complete (data-done), three pink rings run out from the middle, one after
@@ -165,5 +175,9 @@ html:has(#top) .site-nav:not([data-past-hero]):not(:has(:focus-visible)) {
   .statement-ring {
     stroke-dashoffset: 0;
   }
+  [data-done] .statement-rings {
+    opacity: 1;
+  }
 }
+
 

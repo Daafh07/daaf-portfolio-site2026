@@ -24,7 +24,20 @@ const WORDS = PARTS.flatMap(({ text, pink }) =>
 );
 const TOTAL = count;
 
-const RINGS = 8;
+// The circle lines, deliberately not tidy: each has its own size, centre (a little off), place where
+// it starts, direction and moment, so they cross and tangle. `start` and `span` are fractions of the
+// typing; `rot` is where on the circle it starts (degrees); `dir` is 1 clockwise, -1 the other way.
+const RINGS = [
+  { r: 70, dx: 0, dy: 0, rot: 40, dir: 1, start: 0.0, span: 0.4 },
+  { r: 135, dx: -45, dy: 30, rot: 200, dir: -1, start: 0.1, span: 0.45 },
+  { r: 195, dx: 55, dy: -40, rot: 310, dir: 1, start: 0.04, span: 0.5 },
+  { r: 255, dx: -65, dy: -25, rot: 120, dir: -1, start: 0.22, span: 0.4 },
+  { r: 325, dx: 35, dy: 65, rot: 250, dir: 1, start: 0.16, span: 0.5 },
+  { r: 395, dx: -30, dy: -55, rot: 20, dir: -1, start: 0.36, span: 0.4 },
+  { r: 465, dx: 75, dy: 20, rot: 160, dir: 1, start: 0.3, span: 0.5 },
+  { r: 545, dx: -55, dy: 65, rot: 280, dir: -1, start: 0.46, span: 0.44 },
+  { r: 625, dx: 20, dy: -35, rot: 90, dir: 1, start: 0.5, span: 0.5 },
+];
 const SCROLL = 150; // svh of scrolling that the screen stays still for
 const TYPED_BY = 0.72; // the sentence is complete this far into that scroll; the rest is a pause
 
@@ -71,10 +84,32 @@ export function Statement() {
         style={{ "--typed": 0, "--q": 0 } as React.CSSProperties}
         className="sticky top-0 flex h-svh items-center overflow-hidden motion-reduce:static motion-reduce:h-auto motion-reduce:py-24"
       >
-        {/* The circle lines: each ring draws from the top, one after the other, as you scroll. */}
-        <svg aria-hidden viewBox="0 0 1000 1000" className="pointer-events-none absolute top-1/2 left-1/2 size-[130vmax] -translate-x-1/2 -translate-y-1/2">
-          {Array.from({ length: RINGS }, (_, k) => (
-            <circle key={k} cx="500" cy="500" r={60 + k * 62} pathLength={1} className="statement-ring" style={{ "--k": k } as React.CSSProperties} />
+        {/* The circle lines: each draws itself as you scroll, fading along its length. They go away
+            again once the wave has passed (data-done). */}
+        <svg aria-hidden viewBox="0 0 1000 1000" className="statement-rings pointer-events-none absolute top-1/2 left-1/2 size-[130vmax] -translate-x-1/2 -translate-y-1/2">
+          <defs>
+            <linearGradient id="statement-fade-a" x1="0" y1="0" x2="1" y2="0.2">
+              <stop offset="0" stopColor="#f9007e" stopOpacity="0.05" />
+              <stop offset="0.55" stopColor="#f9007e" stopOpacity="0.95" />
+              <stop offset="1" stopColor="#f9007e" stopOpacity="0.2" />
+            </linearGradient>
+            <linearGradient id="statement-fade-b" x1="1" y1="0.1" x2="0" y2="1">
+              <stop offset="0" stopColor="#f9007e" stopOpacity="0.1" />
+              <stop offset="0.45" stopColor="#f9007e" stopOpacity="0.85" />
+              <stop offset="1" stopColor="#f9007e" stopOpacity="0.05" />
+            </linearGradient>
+          </defs>
+          {RINGS.map((ring, k) => (
+            <circle
+              key={k}
+              cx={500 + ring.dx}
+              cy={500 + ring.dy}
+              r={ring.r}
+              pathLength={1}
+              stroke={`url(#statement-fade-${k % 2 ? "b" : "a"})`}
+              className="statement-ring"
+              style={{ "--start": ring.start, "--span": ring.span, "--rot": ring.rot, "--dir": ring.dir } as React.CSSProperties}
+            />
           ))}
         </svg>
         {/* The wave: rings of light that run out from the middle once the sentence is complete. */}
