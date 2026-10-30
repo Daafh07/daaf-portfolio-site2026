@@ -7,7 +7,16 @@ import { createGlassLens, LENS_MINI, LENS_SIZE, GLASS_CANVAS_SIZE } from "@/lib/
 import { findSnapTarget, isMagneticIcon, magneticOffsets, restingBox, snapBox } from "@/lib/glass/magnet";
 
 // The cursor point: a small dot exactly on the pointer, so you can see where the lens is heading.
+// Over something that can be pressed (a link, a button, a project tile) the dot becomes a ring with a
+// small point in it, so you see it is pressable even where the lens itself does not change (the big
+// tiles, the long buttons).
 const DOT_SIZE = 10;
+const RING_SIZE = 38;
+const PRESSABLE = 'a[href], button, summary, [role="button"], [data-glass-snap], [data-glass-lens]';
+const isPressable = (target: Element) => {
+  const element = target.closest(PRESSABLE);
+  return !!element && !element.matches(':disabled, [aria-disabled="true"]') && !element.closest("[inert]");
+};
 
 // Over the hero the lens is the big round one with full refraction. Everywhere else it is a mini
 // ball that bends the page a little less, so text stays readable. Near a button or link either
@@ -60,6 +69,7 @@ export function GlassCursor() {
       resetIcons();
       canvas.style.opacity = "0";
       dot.style.opacity = "0";
+      dot.removeAttribute("data-pressable");
       document.documentElement.removeAttribute("data-glass-cursor");
       cancelAnimationFrame(frame);
       frame = 0;
@@ -154,8 +164,9 @@ export function GlassCursor() {
       visible = true;
       activeUntil = performance.now() + ACTIVE_MS;
       // The dot follows the pointer directly (no spring), and the native arrow gives way to it.
-      dot.style.transform = `translate3d(${pointerX - DOT_SIZE / 2}px, ${pointerY - DOT_SIZE / 2}px, 0)`;
+      dot.style.transform = `translate3d(${pointerX}px, ${pointerY}px, 0)`;
       dot.style.opacity = "1";
+      dot.toggleAttribute("data-pressable", isPressable(target));
       document.documentElement.setAttribute("data-glass-cursor", "");
       const baseChanged = wanted !== base;
       base = wanted;
@@ -234,12 +245,21 @@ export function GlassCursor() {
   }, []);
 
   return <>
-    <style>{`html[data-glass-cursor], html[data-glass-cursor] * { cursor: none !important; }`}</style>
+    <style>{`html[data-glass-cursor], html[data-glass-cursor] * { cursor: none !important; }
+      [data-glass-dot] span { position: absolute; top: 0; left: 0; border-radius: 50%; translate: -50% -50%; }
+      .glass-dot-point { background: #fff; transition: transform .22s cubic-bezier(.22,1,.36,1); }
+      .glass-dot-ring { border: 1.5px solid #fff; opacity: 0; transform: scale(.35); transition: transform .26s cubic-bezier(.22,1,.36,1), opacity .2s; }
+      [data-glass-dot][data-pressable] .glass-dot-point { transform: scale(.6); }
+      [data-glass-dot][data-pressable] .glass-dot-ring { opacity: 1; transform: scale(1); }
+      @media (prefers-reduced-motion: reduce) { .glass-dot-point, .glass-dot-ring { transition: none; } }`}</style>
     <canvas ref={canvasRef} aria-hidden data-glass-ignore style={{ position: "fixed", top: 0, left: 0,
       width: GLASS_CANVAS_SIZE, height: GLASS_CANVAS_SIZE, zIndex: 45, pointerEvents: "none", opacity: 0 }} />
-    {/* White with "difference": reads as white on the dark page and as black on the white letters. */}
-    <div ref={dotRef} aria-hidden data-glass-ignore style={{ position: "fixed", top: 0, left: 0, width: DOT_SIZE, height: DOT_SIZE,
-      borderRadius: "50%", background: "#fff", mixBlendMode: "difference", zIndex: 46, pointerEvents: "none",
-      opacity: 0, transition: "opacity .15s", willChange: "transform" }} />
+    {/* White with "difference": reads as white on the dark page and as black on the white letters.
+        The outer box sits on the pointer; inside it the point, and a ring that opens over a pressable thing. */}
+    <div ref={dotRef} aria-hidden data-glass-ignore data-glass-dot style={{ position: "fixed", top: 0, left: 0, width: 0, height: 0,
+      mixBlendMode: "difference", zIndex: 46, pointerEvents: "none", opacity: 0, transition: "opacity .15s", willChange: "transform" }}>
+      <span className="glass-dot-point" style={{ width: DOT_SIZE, height: DOT_SIZE }} />
+      <span className="glass-dot-ring" style={{ width: RING_SIZE, height: RING_SIZE }} />
+    </div>
   </>;
 }
