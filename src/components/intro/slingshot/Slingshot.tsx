@@ -369,7 +369,10 @@ export function Slingshot({ onGrab, onImpact }: SlingshotProps) {
           transform: "translate(-200vw, 0)",
         }}
       >
-        D
+        {/* The glyph's own box lies a little high and to the right in Blur Bold: measured on the pixels it
+            sat 4.2px too high and 0.7px too far right in the 88px circle, so it is moved back (in em,
+            so it holds when the letter gets smaller on a narrow screen). */}
+        <span className="block [transform:translate(-0.008em,0.048em)]">D</span>
       </button>
     </>
   );
