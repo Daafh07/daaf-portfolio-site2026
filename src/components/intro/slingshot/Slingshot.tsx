@@ -146,7 +146,8 @@ export function Slingshot({ onGrab, onImpact }: SlingshotProps) {
     s.strain = 0;
     const pull = clamp(Math.hypot(dx, dy) / SLING.maxPull, 0, 1);
     s.pull = pull;
-    sound.play("release", pull);
+    // The release is the first moment a phone lets audio start, so wait for it to wake up.
+    void sound.unlock().then(() => sound.play("release", pull));
     const puff = DUST.launch;
     burst(
       s.ax,

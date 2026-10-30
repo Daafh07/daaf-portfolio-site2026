@@ -1,10 +1,14 @@
-import { SOUNDS, type SoundName, type Voice } from "./sounds";
+import { SOUNDS, type SoundName, type SoundSpec, type Voice } from "./sounds";
 
 // A small sound engine on the Web Audio API. There are no audio files: every sound is built
 // from oscillators and filtered noise at the moment it plays, so there is nothing to load.
 //
-// Browsers only allow sound after a click, tap or key press. `unlock()` must be called from
-// one of those events (the first grab of the D does). Until then `play()` stays silent.
+// Browsers only allow sound after a click, tap or key press, and phones are stricter: a finger
+// going down does not count, only the finger coming up (or a tap) does. So the engine wakes the
+// audio on every gesture (see the listeners at the bottom). Until the audio runs, `play()` stays
+// silent instead of queueing, otherwise everything would sound at once when it finally starts.
+//
+// The same sounds also drive the vibration on phones that support it (see `haptic` in sounds.ts).
 
 const STORAGE_KEY = "daaf-sound";
 
@@ -24,6 +28,9 @@ function readPreference() {
   }
 }
 
+// Resuming before the visitor has done anything only makes the browser log a warning.
+const canResume = () => typeof navigator === "undefined" || (navigator.userActivation?.hasBeenActive ?? true);
+
 function getContext() {
   if (!context || context.state === "closed") {
     noiseBuffer = null;
@@ -36,8 +43,17 @@ function getContext() {
     output.gain.value = enabled ? 0.9 : 0;
     output.connect(context.destination);
   }
-  if (context.state === "suspended") void context.resume().catch(() => {});
+  // Not only "suspended": iOS Safari also uses "interrupted" (after a call, or switching apps).
+  if (context.state !== "running" && canResume()) void context.resume().catch(() => {});
   return context;
+}
+
+// Phones that cannot vibrate (all iPhones) simply ignore this.
+function vibrate(pattern: number | number[]) {
+  if (typeof navigator === "undefined" || typeof navigator.vibrate !== "function") return;
+  // Chrome blocks vibration, with a warning, until the visitor has tapped the page once.
+  if (navigator.userActivation && !navigator.userActivation.hasBeenActive) return;
+  navigator.vibrate(pattern);
 }
 
 function getNoise(ctx: AudioContext) {
@@ -113,22 +129,36 @@ function notify() {
 }
 
 export const sound = {
-  /** Call from a click, tap or key press. Creates and wakes the audio context. */
-  unlock() {
-    if (enabled) getContext();
+  /**
+   * Call from a click, tap or key press. Creates and wakes the audio context. The promise
+   * resolves once the audio runs (or after a short wait if the browser does not allow it yet),
+   * so a sound that must not be lost can wait for it.
+   */
+  unlock(): Promise<void> {
+    if (!enabled) return Promise.resolve();
+    const ctx = getContext();
+    if (!ctx || ctx.state === "running") return Promise.resolve();
+    const patience = new Promise<void>((resolve) => setTimeout(resolve, 250));
+    return Promise.race([ctx.resume().then(() => undefined), patience]).catch(() => undefined);
   },
 
-  /** Play a sound. `level` (0 to 1) is how strongly it is triggered. */
+  /** Play a sound and its vibration. `level` (0 to 1) is how strongly it is triggered. */
   play(name: SoundName, level = 0.5) {
     if (!enabled) return;
-    const spec = SOUNDS[name];
+    const spec: SoundSpec = SOUNDS[name];
     const now = performance.now();
     if (now - (lastPlayed.get(name) ?? -Infinity) < spec.gap * 1000) return;
+    const strength = Number.isFinite(level) ? Math.min(1, Math.max(0, level)) : 0.5;
+    // Only play while the audio runs. Scheduling on a sleeping context would queue the sound and
+    // release it all at once later. The vibration does not depend on the audio.
     const ctx = context;
-    // A gesture may still be resuming the context; queue the first grab on its audio clock.
-    if (!ctx || ctx.state === "closed" || !output) return;
+    const out = output;
+    const audible = ctx !== null && out !== null && ctx.state === "running";
+    const haptic = document.visibilityState === "visible" ? spec.haptic : undefined;
+    if (!audible && !haptic) return;
     lastPlayed.set(name, now);
-    spec.play(createVoice(ctx, output), Number.isFinite(level) ? Math.min(1, Math.max(0, level)) : 0.5);
+    if (haptic) vibrate(haptic(strength));
+    if (audible) spec.play(createVoice(ctx, out), strength);
   },
 
   isEnabled: () => enabled,
@@ -152,3 +182,24 @@ export const sound = {
     return () => listeners.delete(listener);
   },
 };
+
+// Phones only start audio from the end of a touch, not from the start of it, and iOS also wants
+// a (silent) sound started inside that gesture before it lets later sounds through.
+// So every real gesture wakes the audio if it is not running yet. Cheap once it runs.
+function wakeOnGesture(event: Event) {
+  if (!event.isTrusted || !enabled || context?.state === "running") return;
+  const ctx = getContext();
+  if (!ctx) return;
+  try {
+    const silence = ctx.createBufferSource();
+    silence.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+    silence.connect(ctx.destination);
+    silence.start(0);
+  } catch {}
+}
+
+if (typeof window !== "undefined") {
+  for (const type of ["pointerdown", "pointerup", "touchend", "click", "keydown"]) {
+    window.addEventListener(type, wakeOnGesture, { capture: true, passive: true });
+  }
+}

@@ -14,7 +14,7 @@ planned for the contact form and anything dynamic, but is not connected yet.
 
 ```bash
 npm install
-npm run dev        # http://localhost:3000
+npm run dev        # http://localhost:4000
 ```
 
 | Script              | What it does                          |
@@ -39,7 +39,7 @@ src/
     SoundToggle.tsx       Sound on/off
   lib/
     glass/                WebGL lens (lens.ts) and the magnet/snap logic (magnet.ts)
-    sound/                Web Audio engine and the sound designs, no audio files
+    sound/                Web Audio engine, the sound designs (no audio files) and the vibration that goes with them
   fonts/                  Blur Bold
 public/
   hero/                   Icons around the wordmark

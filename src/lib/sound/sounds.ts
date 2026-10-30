@@ -28,10 +28,16 @@ export type Voice = {
   noise(spec: NoiseSpec): void;
 };
 
-type SoundSpec = {
+export type SoundSpec = {
   /** Minimum seconds between two plays, so fast repeats cannot pile up. */
   gap: number;
   play: (voice: Voice, level: number) => void;
+  /**
+   * Vibration that goes with the sound, in milliseconds: one number, or a pattern of
+   * vibrate, pause, vibrate... Only phones that can vibrate use it. Kept to the moments you
+   * can feel in the hand (the slingshot), not every intro sound, or the phone would buzz through the whole intro.
+   */
+  haptic?: (level: number) => number | number[];
 };
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -84,6 +90,7 @@ export const SOUNDS = {
   // The D is picked up: a soft pop with a tiny click on top.
   grab: {
     gap: 0.06,
+    haptic: () => 12,
     play: (v) => {
       v.tone({ from: 520, to: 340, duration: 0.07, peak: 0.055 });
       v.noise({ freq: 1800, q: 1, duration: 0.02, peak: 0.02 });
@@ -93,6 +100,7 @@ export const SOUNDS = {
   // One tick for every step of the pull. Climbs in pitch as the band gets tighter.
   stretch: {
     gap: 0.035,
+    haptic: (level) => 6 + Math.round(level * 6), // firmer as the band gets tighter
     play: (v, level) => {
       v.tone({ wave: "triangle", from: lerp(230, 620, level), to: lerp(200, 540, level), duration: 0.04, peak: 0.032, cutoff: 1600 });
       v.noise({ freq: 2600, q: 2, duration: 0.01, peak: 0.008 });
@@ -102,6 +110,7 @@ export const SOUNDS = {
   // The band at its limit: a low, strained groan.
   strain: {
     gap: 0.2,
+    haptic: () => [18, 24, 18, 24, 18], // a tremble
     play: (v) => {
       v.tone({ wave: "sawtooth", from: 150, to: 136, duration: 0.18, peak: 0.028, attack: 0.02, cutoff: 520 });
       v.tone({ from: 300, to: 286, duration: 0.18, peak: 0.011, attack: 0.02 });
@@ -111,6 +120,7 @@ export const SOUNDS = {
   // Let go: the rubber snaps. A crack, then a fast falling twang. Harder pull, louder snap.
   release: {
     gap: 0.06,
+    haptic: (level) => 24 + Math.round(level * 16),
     play: (v, level) => {
       const power = lerp(0.6, 1, level);
       v.noise({ freq: 2200, q: 1.5, duration: 0.03, peak: 0.05 * power });
@@ -122,6 +132,7 @@ export const SOUNDS = {
   // The D hits the canvas: a low thump with a bit of body.
   impact: {
     gap: 0.06,
+    haptic: (level) => 30 + Math.round(level * 20),
     play: (v, level) => {
       const power = lerp(0.6, 1, level);
       v.tone({ from: 130, to: 48, duration: 0.16, peak: 0.09 * power });
