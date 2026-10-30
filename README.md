@@ -42,7 +42,7 @@ src/
     contact/              "Let's build something" (data/contact.ts has the email and the two links) and the closing wordmark
     Footer.tsx            The footer on every page: pages, the projects (from Supabase), elsewhere, colophon
     tools/                "What I build with": the tools as loose outlined blobs that the pointer pushes and a click throws out (data/tools.ts)
-    motion/               Reveal (lifts content in when it scrolls into view) and ParallaxGrid (the columns of the project grid drift while you scroll)
+    motion/               Reveal (lifts content in when it scrolls into view), Pop (tiles that drop in), RiseWords, DrawLine, Magnetic, LiveDot, and ParallaxGrid (the columns of the project grid drift while you scroll)
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
     Nav.tsx               Fixed menu: out of sight while the hero is on screen, fades in once it has scrolled behind the bar (always visible on pages without a hero)
     BlobButton.tsx        Blob-shaped button
