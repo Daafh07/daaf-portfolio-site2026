@@ -17,7 +17,9 @@ export function BlobButton({ className = "", children, ...props }: BlobButtonPro
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-[7.68%] bottom-[2.07%] h-[90.25%] w-full"
       />
-      <span className="relative">{children}</span>
+      {/* The blob sits 1px lower than the middle of the button (as in the design), so the label
+          goes down a little too: measured, it was 1.4px above the middle of the blob. */}
+      <span className="relative top-[1.5px]">{children}</span>
     </a>
   );
 }
