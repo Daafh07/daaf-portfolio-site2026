@@ -1,6 +1,11 @@
-// A small local texture is enough: only the hero content beneath the lens is painted.
-// The reference hero uses its round 128px variant, not the 80 × 54 base variant.
+// A small local texture is enough: only the part of the page right under the lens is painted
+// (see scene.ts). The reference hero uses its round 128px variant, not the 80 × 54 base variant.
+import { disposeScene, paintScene } from "./scene";
+
+/** The lens over the hero. */
 export const LENS_SIZE = 122;
+/** The mini ball that follows the cursor everywhere else. */
+export const LENS_MINI = 44;
 export const GLASS_CANVAS_SIZE = 320;
 const TEXTURE_SIZE = GLASS_CANVAS_SIZE;
 const WIDTH = GLASS_CANVAS_SIZE;
@@ -19,6 +24,7 @@ precision highp float;
 uniform sampler2D scene;
 uniform float pixelRatio;
 uniform vec4 shape; // width, height, corner radius, snap amount
+uniform float rim; // 0 for the big hero lens, 1 for the mini ball: adds a glass edge
 varying vec2 uv;
 void main() {
   vec2 p = (uv - .5) * 320.;
@@ -35,60 +41,22 @@ void main() {
   float displacement = pow(r, 5.5 * radius * pixelRatio / 100.) * strength * 40. * .95 / pixelRatio;
   vec2 sampleUv = .5 + (p - direction * displacement) / 320.;
   sampleUv.y = 1. - sampleUv.y;
-  vec2 split = vec2(direction.x, -direction.y) * .18 * .02 * r * 247. / 320.;
+  // The colour fringe fades out as the lens is toned down (small lens, buttons): on a light shape on
+  // a dark page it would turn into thick coloured bands along the edge.
+  vec2 split = vec2(direction.x, -direction.y) * .18 * (1. - shape.w) * .02 * r * 247. / 320.;
   vec3 color = vec3(texture2D(scene, sampleUv + split).r,
                     texture2D(scene, sampleUv).g,
                     texture2D(scene, sampleUv - split).b);
+  // A small lens over a flat area would be an invisible disc. Give it a faint tint, a bright rim
+  // on the lit side (top left) and a shade on the opposite one, so it reads as glass.
+  float edge = smoothstep(.78, 1., r);
+  float lit = dot(direction, normalize(vec2(-.5, .85)));
+  color = mix(color, vec3(1.), rim * (.05 + edge * (.3 * max(lit, 0.) + .08)));
+  color *= 1. - rim * edge * .45 * max(-lit, 0.);
   float mask = 1. - smoothstep(.985, 1., r);
   gl_FragColor = vec4(color, mask);
 }
 `;
-
-// The scene texture is painted by hand (the lens cannot read the DOM), so every kind of thing
-// that may sit under the lens needs a painter. The canvas must already be translated to the lens.
-function paintText(ctx: CanvasRenderingContext2D, text: string, rect: DOMRect, style: CSSStyleDeclaration) {
-  ctx.font = `${style.fontWeight} ${style.fontSize} ${style.fontFamily}`;
-  ctx.fillStyle = style.color;
-  ctx.textBaseline = "alphabetic";
-  const metrics = ctx.measureText(text);
-  const ascent = metrics.fontBoundingBoxAscent ?? parseFloat(style.fontSize) * .8;
-  const descent = metrics.fontBoundingBoxDescent ?? parseFloat(style.fontSize) * .2;
-  ctx.fillText(text, rect.left, rect.top + (rect.height - ascent - descent) / 2 + ascent);
-}
-
-function paintImage(ctx: CanvasRenderingContext2D, img: HTMLImageElement, rect: DOMRect) {
-  if (!img.complete || !img.naturalWidth) return;
-  const style = getComputedStyle(img);
-  const matrix = new DOMMatrix(style.transform === "none" ? undefined : style.transform);
-  ctx.save();
-  ctx.translate(rect.x + rect.width / 2, rect.y + rect.height / 2);
-  ctx.rotate(Math.atan2(matrix.b, matrix.a));
-  const width = parseFloat(style.width), height = parseFloat(style.height);
-  ctx.drawImage(img, -width / 2, -height / 2, width, height);
-  ctx.restore();
-}
-
-// A control outside the hero (a menu link, a button) is painted into the lens too, so the glass
-// refracts it instead of covering it. Images first (a button's blob), then its text on top.
-function paintControl(ctx: CanvasRenderingContext2D, control: HTMLElement) {
-  const style = getComputedStyle(control);
-  if (style.backgroundColor !== "rgba(0, 0, 0, 0)" && style.backgroundColor !== "transparent") {
-    const rect = control.getBoundingClientRect();
-    ctx.fillStyle = style.backgroundColor;
-    ctx.beginPath();
-    ctx.roundRect(rect.left, rect.top, rect.width, rect.height, parseFloat(style.borderTopLeftRadius) || 0);
-    ctx.fill();
-  }
-  control.querySelectorAll<HTMLImageElement>("img").forEach((img) => paintImage(ctx, img, img.getBoundingClientRect()));
-  const range = document.createRange();
-  const walker = document.createTreeWalker(control, NodeFilter.SHOW_TEXT);
-  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
-    const text = node.textContent?.trim();
-    if (!text || !node.parentElement) continue;
-    range.selectNodeContents(node);
-    paintText(ctx, text, range.getBoundingClientRect(), getComputedStyle(node.parentElement));
-  }
-}
 
 export function createGlassLens(canvas: HTMLCanvasElement) {
   const gl = canvas.getContext("webgl", { alpha: true, premultipliedAlpha: false, antialias: true });
@@ -107,6 +75,7 @@ export function createGlassLens(canvas: HTMLCanvasElement) {
   const buffer = gl.createBuffer();
   const texture = gl.createTexture();
   const dispose = () => {
+    disposeScene();
     shaders.forEach((shader) => gl.deleteShader(shader));
     gl.deleteProgram(program);
     gl.deleteBuffer(buffer);
@@ -140,31 +109,20 @@ export function createGlassLens(canvas: HTMLCanvasElement) {
   gl.uniform1i(gl.getUniformLocation(program, "scene"), 0);
   const shapeLocation = gl.getUniformLocation(program, "shape");
   const pixelRatio = gl.getUniformLocation(program, "pixelRatio");
+  const rimLocation = gl.getUniformLocation(program, "rim");
 
   return {
-    draw(
-      x: number, y: number, hero: HTMLElement, width = LENS_SIZE, height = LENS_SIZE, corner = LENS_SIZE / 2, snap = 0,
-      control: HTMLElement | null = null,
-    ) {
+    draw(x: number, y: number, width = LENS_SIZE, height = LENS_SIZE, corner = LENS_SIZE / 2, snap = 0, rim = 0) {
       if (gl.isContextLost()) throw new Error("WebGL context lost");
       ctx.setTransform(RESOLUTION, 0, 0, RESOLUTION, 0, 0);
       ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
       ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
       ctx.translate(TEXTURE_SIZE / 2 - x, TEXTURE_SIZE / 2 - y);
-      const overlaps = (rect: DOMRect) => rect.right > x - TEXTURE_SIZE / 2 && rect.left < x + TEXTURE_SIZE / 2 && rect.bottom > y - TEXTURE_SIZE / 2 && rect.top < y + TEXTURE_SIZE / 2;
-      hero.querySelectorAll<HTMLElement>("[data-hero-letter]").forEach((letter) => {
-        const rect = letter.getBoundingClientRect();
-        if (!overlaps(rect)) return;
-        paintText(ctx, letter.textContent ?? "", rect, getComputedStyle(letter));
-      });
-      hero.querySelectorAll<HTMLImageElement>("img").forEach((img) => {
-        const rect = img.getBoundingClientRect();
-        if (overlaps(rect)) paintImage(ctx, img, rect);
-      });
-      if (control) paintControl(ctx, control);
+      paintScene(ctx, { left: x - TEXTURE_SIZE / 2, top: y - TEXTURE_SIZE / 2, right: x + TEXTURE_SIZE / 2, bottom: y + TEXTURE_SIZE / 2 });
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
       gl.uniform1f(pixelRatio, window.devicePixelRatio || 1);
       gl.uniform4f(shapeLocation, width, height, corner, snap);
+      gl.uniform1f(rimLocation, rim);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     },

@@ -4,6 +4,7 @@ import "@fontsource/poppins/400.css";
 import "@fontsource/poppins/500.css";
 import "@fontsource/poppins/700.css";
 import "./globals.css";
+import { GlassCursor } from "@/components/GlassCursor";
 import { introGateScript } from "@/components/intro/introGate";
 
 const blur = localFont({
@@ -25,7 +26,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: introGateScript }} />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <GlassCursor />
+      </body>
     </html>
   );
 }

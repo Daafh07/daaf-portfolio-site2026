@@ -2,11 +2,23 @@
 
 import { useEffect, useRef } from "react";
 import { animate } from "motion";
-import { createGlassLens, LENS_SIZE, GLASS_CANVAS_SIZE } from "@/lib/glass/lens";
+import { createGlassLens, LENS_MINI, LENS_SIZE, GLASS_CANVAS_SIZE } from "@/lib/glass/lens";
 import { findSnapTarget, isMagneticIcon, magneticOffsets, restingBox, snapBox } from "@/lib/glass/magnet";
 
 // The cursor point: a small dot exactly on the pointer, so you can see where the lens is heading.
 const DOT_SIZE = 10;
+
+// Over the hero the lens is the big round one with full refraction. Everywhere else it is a mini
+// ball that bends the page a little less, so text stays readable. Near a button or link either
+// one grows to fit it. `blend` is how much the refraction is toned down (0 = full, 1 = least).
+const HERO = { size: LENS_SIZE, blend: 0 };
+const PAGE = { size: LENS_MINI, blend: 0.55 };
+// On the hero the lens floats this far above the pointer (as on the reference). The mini ball is
+// centred on it, so the dot sits in its middle.
+const LIFT = 6;
+// After the last move or scroll the lens keeps redrawing for this long (in ms), so things that
+// move under it on their own, like a card lifting or the fan being dealt, show up.
+const ACTIVE_MS = 1200;
 
 export function GlassCursor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -15,17 +27,18 @@ export function GlassCursor() {
   useEffect(() => {
     const canvas = canvasRef.current;
     const dot = dotRef.current;
-    const hero = document.querySelector<HTMLElement>("[data-hero-wordmark]");
-    if (!canvas || !dot || !hero) return;
+    if (!canvas || !dot) return;
     const mouse = matchMedia("(any-hover: hover) and (any-pointer: fine)");
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     let lens: ReturnType<typeof createGlassLens> = null;
     let frame = 0, last = 0, pointerX = 0, pointerY = 0;
     let x = 0, y = 0, vx = 0, vy = 0, visible = false;
     let snapped: HTMLElement | null = null;
-    let sceneControl: HTMLElement | null = null;
+    let base = HERO, activeUntil = 0;
     // Width/height, attachment amount, attachment position, optical control blend.
     const shape = [LENS_SIZE, LENS_SIZE, 0, 0, 0, 0];
+    // The lens only floats above the pointer when it is big: the mini ball sits right on it.
+    const lift = () => LIFT * Math.min(1, Math.max(0, (shape[0] - LENS_MINI) / (LENS_SIZE - LENS_MINI)));
     const animations = new Map<number, ReturnType<typeof animate>>();
     const icons = new Map<HTMLElement, { x: number; y: number; vx: number; vy: number; original: string }>();
     const resetIcons = () => {
@@ -35,7 +48,7 @@ export function GlassCursor() {
     const hide = () => {
       visible = false;
       snapped?.removeAttribute("data-glass-attached");
-      snapped = sceneControl = null;
+      snapped = null;
       animations.forEach((animation) => animation.stop());
       animations.clear();
       resetIcons();
@@ -51,14 +64,15 @@ export function GlassCursor() {
       if (snapped && !snapped.isConnected) { hide(); return; }
       const dt = Math.min((now - last) / 1000, .04);
       last = now;
-      if (reduced.matches) { x = pointerX; y = pointerY - 6; vx = vy = 0; }
+      const aimY = pointerY - lift();
+      if (reduced.matches) { x = pointerX; y = aimY; vx = vy = 0; }
       else for (let step = 0; step < 4; step++) {
         vx += ((pointerX - x) * 500 - vx * 60) * dt / 4;
-        vy += ((pointerY - 6 - y) * 500 - vy * 60) * dt / 4;
+        vy += ((aimY - y) * 500 - vy * 60) * dt / 4;
         x += vx * dt / 4;
         y += vy * dt / 4;
       }
-      let moving = Math.hypot(pointerX - x, pointerY - 6 - y) > .02 || Math.hypot(vx, vy) > .1;
+      let moving = Math.hypot(pointerX - x, aimY - y) > .02 || Math.hypot(vx, vy) > .1;
       icons.forEach((state, icon) => {
         const box = restingBox(icon);
         const inHover = !reduced.matches && pointerX >= box.left - 10 && pointerX <= box.right + 10 && pointerY >= box.top - 10 && pointerY <= box.bottom + 10;
@@ -80,12 +94,14 @@ export function GlassCursor() {
       const cx = x + (shape[3] - x) * amount;
       const cy = y + (shape[4] - y) * amount;
       const width = Math.max(1, shape[0]), height = Math.max(1, shape[1]);
-      try { lens?.draw(cx, cy, hero, width, height, Math.min(width, height) / 2, Math.max(0, Math.min(1, shape[5])), sceneControl); }
+      // The smaller the lens, the more it needs a glass edge: none on the big hero lens, full on the mini ball.
+      const rim = Math.max(0, Math.min(1, 1 - (Math.min(width, height) - LENS_MINI) / (LENS_SIZE - LENS_MINI)));
+      try { lens?.draw(cx, cy, width, height, Math.min(width, height) / 2, Math.max(0, Math.min(1, shape[5])), rim); }
       catch { hide(); return; }
       canvas.style.transform = `translate3d(${cx - GLASS_CANVAS_SIZE / 2}px, ${cy - GLASS_CANVAS_SIZE / 2}px, 0)`;
       canvas.style.opacity = "1";
       document.documentElement.setAttribute("data-glass-cursor", "");
-      if (moving || animations.size) frame = requestAnimationFrame(draw);
+      if (moving || animations.size || now < activeUntil) frame = requestAnimationFrame(draw);
     };
     const schedule = () => { if (!frame) { last = performance.now(); frame = requestAnimationFrame(draw); } };
     const spring = (index: number, to: number) => {
@@ -97,25 +113,30 @@ export function GlassCursor() {
         onComplete: () => { animations.delete(index); },
       }));
     };
-    const move = (event: PointerEvent) => {
-      if (!mouse.matches || event.pointerType !== "mouse" || document.documentElement.dataset.intro === "playing") { hide(); return; }
-      const target = event.target;
-      if (!(target instanceof Element) || target.closest('input, textarea, select, [contenteditable], [data-glass-ignore]')) { hide(); return; }
-      const next = findSnapTarget(event.clientX, event.clientY, snapped);
-      if (!next && !target.closest("#top")) { hide(); return; }
+    // Decides what the lens does for a pointer at (clientX, clientY) over `target`.
+    const update = (clientX: number, clientY: number, target: Element | null) => {
+      if (!mouse.matches || document.documentElement.dataset.intro === "playing") { hide(); return; }
+      if (!target || target.closest('input, textarea, select, [contenteditable], [data-glass-ignore]')) { hide(); return; }
+      const next = findSnapTarget(clientX, clientY, snapped);
       lens ??= createGlassLens(canvas);
       if (!lens) return;
-      pointerX = event.clientX;
-      pointerY = event.clientY;
+      pointerX = clientX;
+      pointerY = clientY;
+      // The big lens belongs to the hero (and to what is snapped inside it), the mini ball to the rest.
+      const wanted = (next ?? target).closest("#top") ? HERO : PAGE;
       if (!visible) {
-        x = pointerX; y = pointerY - 6; vx = vy = 0;
-        shape.splice(0, shape.length, LENS_SIZE, LENS_SIZE, 0, x, y, 0);
+        base = wanted;
+        x = pointerX; y = pointerY - LIFT * (base === HERO ? 1 : 0); vx = vy = 0;
+        shape.splice(0, shape.length, base.size, base.size, 0, x, y, base.blend);
       }
       visible = true;
+      activeUntil = performance.now() + ACTIVE_MS;
       // The dot follows the pointer directly (no spring), and the native arrow gives way to it.
       dot.style.transform = `translate3d(${pointerX - DOT_SIZE / 2}px, ${pointerY - DOT_SIZE / 2}px, 0)`;
       dot.style.opacity = "1";
       document.documentElement.setAttribute("data-glass-cursor", "");
+      const baseChanged = wanted !== base;
+      base = wanted;
       if (next !== snapped) {
         snapped?.removeAttribute("data-glass-attached");
         snapped = next;
@@ -131,13 +152,23 @@ export function GlassCursor() {
           spring(3, box.left + box.width / 2);
           spring(4, box.top + box.height / 2);
           spring(5, icon ? 0 : 1);
-          sceneControl = hero.contains(snapped) ? null : snapped;
           if (icon && !icons.has(snapped)) icons.set(snapped, { x: 0, y: 0, vx: 0, vy: 0, original: snapped.style.translate });
         } else {
-          spring(0, LENS_SIZE); spring(1, LENS_SIZE); spring(2, 0); spring(5, 0);
+          spring(0, base.size); spring(1, base.size); spring(2, 0); spring(5, base.blend);
         }
+      } else if (baseChanged && !snapped) {
+        // Crossing from the hero to the page (or back): the lens shrinks to the mini ball (or grows).
+        spring(0, base.size); spring(1, base.size); spring(5, base.blend);
       }
       schedule();
+    };
+    const move = (event: PointerEvent) => {
+      if (event.pointerType !== "mouse") { hide(); return; }
+      update(event.clientX, event.clientY, event.target instanceof Element ? event.target : null);
+    };
+    // The page moves under a resting pointer: look again at what is there, and redraw.
+    const scrolled = () => {
+      if (visible) update(pointerX, pointerY, document.elementFromPoint(pointerX, pointerY));
     };
     const leave = (event: PointerEvent) => { if (!event.relatedTarget) hide(); };
     const contextLost = (event: Event) => { event.preventDefault(); hide(); };
@@ -147,7 +178,7 @@ export function GlassCursor() {
     window.addEventListener("pointercancel", hide);
     document.addEventListener("pointerout", leave);
     window.addEventListener("blur", hide);
-    window.addEventListener("scroll", hide, { passive: true, capture: true });
+    window.addEventListener("scroll", scrolled, { passive: true, capture: true });
     window.addEventListener("resize", hide);
     document.addEventListener("visibilitychange", hide);
     mouse.addEventListener("change", hide);
@@ -160,7 +191,7 @@ export function GlassCursor() {
       window.removeEventListener("pointercancel", hide);
       document.removeEventListener("pointerout", leave);
       window.removeEventListener("blur", hide);
-      window.removeEventListener("scroll", hide, true);
+      window.removeEventListener("scroll", scrolled, true);
       window.removeEventListener("resize", hide);
       document.removeEventListener("visibilitychange", hide);
       mouse.removeEventListener("change", hide);
