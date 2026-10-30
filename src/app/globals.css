@@ -88,3 +88,19 @@ html:has(#top) .site-nav:not([data-past-hero]):not(:has(:focus-visible)) {
     transform: none;
   }
 }
+
+/* The statement types itself out: each letter shows once --typed (set from the scroll position)
+   has passed its number --i, fading in over a quarter of a letter. The cursor is a pink bar on the
+   right edge of the letter that is being typed; it takes no room. */
+
+.typed-letter {
+  opacity: clamp(0, calc((var(--typed) - var(--i)) * 4), 1);
+}
+.typed-letter[data-cursor] {
+  box-shadow: 3px 0 0 -0.5px #f9007e;
+}
+@media (prefers-reduced-motion: reduce) {
+  .typed-letter {
+    opacity: 1;
+  }
+}

@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: introGateScript }} />
         {/* Without JavaScript nothing can reveal itself, so show it. */}
         <noscript>
-          <style>{`[data-reveal]{opacity:1!important;transform:none!important}`}</style>
+          <style>{`[data-reveal]{opacity:1!important;transform:none!important}[data-typing] .typed-letter{opacity:1!important}`}</style>
         </noscript>
       </head>
       <body>
