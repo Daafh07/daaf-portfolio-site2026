@@ -9,6 +9,13 @@ const EASE_CURTAIN: Ease = [0.77, 0, 0.175, 1]; // ref
 export const INTRO = {
   /** sessionStorage key: the intro plays once per session (and again on reload). */
   storageKey: "daaf-intro-played",
+  /**
+   * sessionStorage key the menu's logo sets (with the time) to ask for the intro, without the game,
+   * on the next page load. It only counts for `replayWindow` ms, so a click that never led to a
+   * load can't change a later visit.
+   */
+  replayKey: "daaf-intro-replay",
+  replayWindow: 10_000,
 
   /** Play the slingshot mini game before the letters sequence, or start the sequence right away. */
   game: true,

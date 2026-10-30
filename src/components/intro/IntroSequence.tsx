@@ -35,6 +35,8 @@ export function IntroSequence() {
   const [stickerPhase, setStickerPhase] = useState<StickerPhase>("hidden");
   const [impact, setImpact] = useState<ImpactPoint | null>(null);
   const [grabbed, setGrabbed] = useState(false);
+  // Whether the slingshot game is part of this run (not when the logo in the menu asked for the intro).
+  const [withGame, setWithGame] = useState(false);
   const timers = useRef<number[]>([]);
   const startRef = useRef<(geometry: IntroGeometry) => void>(() => {});
 
@@ -92,8 +94,10 @@ export function IntroSequence() {
         return setActive(false);
       }
       setGeometry(measured);
-      if (INTRO.game) setPhase("game");
-      else startRef.current(measured);
+      if (INTRO.game && root.dataset.introGame !== undefined) {
+        setWithGame(true);
+        setPhase("game");
+      } else startRef.current(measured);
     });
 
     return () => {
@@ -114,7 +118,7 @@ export function IntroSequence() {
 
   const curtainOpen = phase === "reveal" || phase === "land";
   // Keep the slingshot mounted until its impact dust has settled.
-  const showGame = phase === "game" || phase === "handoff" || phase === "intro";
+  const showGame = withGame && (phase === "game" || phase === "handoff" || phase === "intro");
 
   return (
     // Hidden by CSS unless <html data-intro="playing">, so it is in the server HTML without flashing.
