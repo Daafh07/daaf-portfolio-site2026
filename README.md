@@ -38,12 +38,14 @@ src/
     services/             "How I can help": the dock of five blobs with the panel of the one picked, and the four steps that open while you scroll
     statement/            The statement: the screen stays still while it types itself out, with pink dots on turning circles behind it (StatementParticles: the dots behave like Bencho's Particles) and a wave that blows them away
     about/                "How I got here": the story and the facts next to it
+    experience/           "Work experience": the timeline (the copy is in data/experience.ts)
+    tools/                "What I build with": the tools as outlined blobs (data/tools.ts)
     motion/               Reveal (lifts content in when it scrolls into view) and ParallaxGrid (the columns of the project grid drift while you scroll)
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
     Nav.tsx               Fixed menu: out of sight while the hero is on screen, fades in once it has scrolled behind the bar (always visible on pages without a hero)
     BlobButton.tsx        Blob-shaped button
     SoundToggle.tsx       Sound on/off
-  data/                   types.ts: the shape of a project; getProjects.ts: reads them from Supabase; layout.ts: where a tile sits, from its number in the list; services.ts: the copy of "How I can help"
+  data/                   types.ts: the shape of a project; getProjects.ts: reads them from Supabase; layout.ts: where a tile sits, from its number in the list; services.ts: the copy of "How I can help"; experience.ts and tools.ts: the timeline and the tool wall
   lib/
     glass/                WebGL lens (lens.ts), the painter that redraws what lies under it (scene.ts) and the magnet/snap logic (magnet.ts)
     sound/                Web Audio engine, the sound designs (no audio files) and the vibration that goes with them
@@ -53,6 +55,7 @@ public/
   ui/                     Shared UI artwork
   projects/<slug>/        Artwork of one tile: blob, logo, hover preview, badge, arrow
   services/               The five blobs of the dock
+  tools/                  The eleven outlined blob shapes of the tool wall
 ```
 
 ## The intro
