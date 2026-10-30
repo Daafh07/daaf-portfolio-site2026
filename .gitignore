@@ -39,7 +39,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-# commercial typeface (Blur Bold): keep the file locally, do not publish it.
-# Add it yourself at this path to build; see the README.
-/src/fonts/Blur-Bold.ttf

@@ -65,7 +65,6 @@ body in Poppins 400/500/700.
 
 ## Notes
 
-- **The Blur Bold font is not in this repository.** It is a commercial typeface, so it is ignored by git.
-  To run or build the site, put your licensed copy at `src/fonts/Blur-Bold.ttf`. Check that your license
-  covers web use before publishing the site.
+- `src/fonts/Blur-Bold.ttf` is a commercial typeface (Neville Brody, FontShop) and is included in this
+  repository because the site needs it to build. Check that your license covers web use and redistribution.
 - Environment variables go in `.env.local` (ignored by git). None are needed yet.
