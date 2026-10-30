@@ -25,6 +25,7 @@ uniform sampler2D scene;
 uniform float pixelRatio;
 uniform vec4 shape; // width, height, corner radius, snap amount
 uniform float rim; // 0 for the big hero lens, 1 for the mini ball: adds a glass edge
+uniform float raw; // diagnostic: 1 shows the painted scene without any bending (see data-glass-raw)
 varying vec2 uv;
 void main() {
   vec2 p = (uv - .5) * 320.;
@@ -38,12 +39,12 @@ void main() {
   if (length(edgeDirection) < .001) edgeDirection = q.x > q.y ? vec2(sign(p.x), 0.) : vec2(0., sign(p.y));
   vec2 direction = normalize(edgeDirection + .00001);
   float strength = mix(4.05, .6, shape.w);
-  float displacement = pow(r, 5.5 * radius * pixelRatio / 100.) * strength * 40. * .95 / pixelRatio;
+  float displacement = pow(r, 5.5 * radius * pixelRatio / 100.) * strength * 40. * .95 / pixelRatio * (1. - raw);
   vec2 sampleUv = .5 + (p - direction * displacement) / 320.;
   sampleUv.y = 1. - sampleUv.y;
   // The colour fringe fades out as the lens is toned down (small lens, buttons): on a light shape on
   // a dark page it would turn into thick coloured bands along the edge.
-  vec2 split = vec2(direction.x, -direction.y) * .18 * (1. - shape.w) * .02 * r * 247. / 320.;
+  vec2 split = vec2(direction.x, -direction.y) * .18 * (1. - shape.w) * (1. - raw) * .02 * r * 247. / 320.;
   vec3 color = vec3(texture2D(scene, sampleUv + split).r,
                     texture2D(scene, sampleUv).g,
                     texture2D(scene, sampleUv - split).b);
@@ -51,8 +52,9 @@ void main() {
   // on the lit side (top left) and a shade on the opposite one, so it reads as glass.
   float edge = smoothstep(.78, 1., r);
   float lit = dot(direction, normalize(vec2(-.5, .85)));
-  color = mix(color, vec3(1.), rim * (.05 + edge * (.3 * max(lit, 0.) + .08)));
-  color *= 1. - rim * edge * .45 * max(-lit, 0.);
+  float glass = rim * (1. - raw);
+  color = mix(color, vec3(1.), glass * (.05 + edge * (.3 * max(lit, 0.) + .08)));
+  color *= 1. - glass * edge * .45 * max(-lit, 0.);
   float mask = 1. - smoothstep(.985, 1., r);
   gl_FragColor = vec4(color, mask);
 }
@@ -110,9 +112,10 @@ export function createGlassLens(canvas: HTMLCanvasElement) {
   const shapeLocation = gl.getUniformLocation(program, "shape");
   const pixelRatio = gl.getUniformLocation(program, "pixelRatio");
   const rimLocation = gl.getUniformLocation(program, "rim");
+  const rawLocation = gl.getUniformLocation(program, "raw");
 
   return {
-    draw(x: number, y: number, width = LENS_SIZE, height = LENS_SIZE, corner = LENS_SIZE / 2, snap = 0, rim = 0) {
+    draw(x: number, y: number, width = LENS_SIZE, height = LENS_SIZE, corner = LENS_SIZE / 2, snap = 0, rim = 0, raw = 0) {
       if (gl.isContextLost()) throw new Error("WebGL context lost");
       ctx.setTransform(RESOLUTION, 0, 0, RESOLUTION, 0, 0);
       ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
@@ -123,6 +126,7 @@ export function createGlassLens(canvas: HTMLCanvasElement) {
       gl.uniform1f(pixelRatio, window.devicePixelRatio || 1);
       gl.uniform4f(shapeLocation, width, height, corner, snap);
       gl.uniform1f(rimLocation, rim);
+      gl.uniform1f(rawLocation, raw);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 6);
     },

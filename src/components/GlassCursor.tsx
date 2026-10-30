@@ -91,12 +91,18 @@ export function GlassCursor() {
         if (Math.hypot(tx - state.x, ty - state.y) > .02 || Math.hypot(state.vx, state.vy) > .1) moving = true;
       });
       const amount = shape[2];
-      const cx = x + (shape[3] - x) * amount;
-      const cy = y + (shape[4] - y) * amount;
+      // On whole screen pixels: the lens is painted and placed at the same spot, and a fractional
+      // place would let the browser shift the canvas half a pixel against what was painted in it.
+      const dpr = window.devicePixelRatio || 1;
+      const cx = Math.round((x + (shape[3] - x) * amount) * dpr) / dpr;
+      const cy = Math.round((y + (shape[4] - y) * amount) * dpr) / dpr;
       const width = Math.max(1, shape[0]), height = Math.max(1, shape[1]);
       // The smaller the lens, the more it needs a glass edge: none on the big hero lens, full on the mini ball.
       const rim = Math.max(0, Math.min(1, 1 - (Math.min(width, height) - LENS_MINI) / (LENS_SIZE - LENS_MINI)));
-      try { lens?.draw(cx, cy, width, height, Math.min(width, height) / 2, Math.max(0, Math.min(1, shape[5])), rim); }
+      // Diagnostic: <html data-glass-raw> shows what was painted under the lens, without bending it,
+      // so the painter (scene.ts) can be compared with the real page.
+      const raw = document.documentElement.hasAttribute("data-glass-raw") ? 1 : 0;
+      try { lens?.draw(cx, cy, width, height, Math.min(width, height) / 2, Math.max(0, Math.min(1, shape[5])), rim, raw); }
       catch { hide(); return; }
       canvas.style.transform = `translate3d(${cx - GLASS_CANVAS_SIZE / 2}px, ${cy - GLASS_CANVAS_SIZE / 2}px, 0)`;
       canvas.style.opacity = "1";
@@ -202,10 +208,10 @@ export function GlassCursor() {
 
   return <>
     <style>{`html[data-glass-cursor], html[data-glass-cursor] * { cursor: none !important; }`}</style>
-    <canvas ref={canvasRef} aria-hidden style={{ position: "fixed", top: 0, left: 0,
+    <canvas ref={canvasRef} aria-hidden data-glass-ignore style={{ position: "fixed", top: 0, left: 0,
       width: GLASS_CANVAS_SIZE, height: GLASS_CANVAS_SIZE, zIndex: 45, pointerEvents: "none", opacity: 0 }} />
     {/* White with "difference": reads as white on the dark page and as black on the white letters. */}
-    <div ref={dotRef} aria-hidden style={{ position: "fixed", top: 0, left: 0, width: DOT_SIZE, height: DOT_SIZE,
+    <div ref={dotRef} aria-hidden data-glass-ignore style={{ position: "fixed", top: 0, left: 0, width: DOT_SIZE, height: DOT_SIZE,
       borderRadius: "50%", background: "#fff", mixBlendMode: "difference", zIndex: 46, pointerEvents: "none",
       opacity: 0, transition: "opacity .15s", willChange: "transform" }} />
   </>;
