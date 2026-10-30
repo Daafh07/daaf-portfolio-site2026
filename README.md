@@ -38,8 +38,8 @@ src/
     services/             "How I can help": the dock of five blobs with the panel of the one picked, and the four steps that open while you scroll
     statement/            The statement: the screen stays still while it types itself out, with pink dots on turning circles behind it (StatementParticles: the dots behave like Bencho's Particles) and a wave that blows them away
     about/                "How I got here": the story and the facts next to it
-    experience/           "Work experience": the timeline (the copy is in data/experience.ts)
-    tools/                "What I build with": the tools as outlined blobs (data/tools.ts)
+    experience/           "Work experience": the timeline, whose line draws itself as you scroll (the copy is in data/experience.ts)
+    tools/                "What I build with": the tools as loose outlined blobs that the pointer pushes and a click throws out (data/tools.ts)
     motion/               Reveal (lifts content in when it scrolls into view) and ParallaxGrid (the columns of the project grid drift while you scroll)
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
     Nav.tsx               Fixed menu: out of sight while the hero is on screen, fades in once it has scrolled behind the bar (always visible on pages without a hero)
