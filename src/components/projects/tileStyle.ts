@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import type { Inset } from "@/data/projects";
+import type { Inset } from "@/data/types";
 
 export const pct = (value: number) => `${value}%`;
 

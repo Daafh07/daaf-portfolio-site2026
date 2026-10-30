@@ -1,5 +1,6 @@
 -- Projects for the portfolio. Run once in the Supabase dashboard: SQL Editor > New query > Run.
--- "data" holds what the tile needs. Where a tile sits on the page follows from sort_order (see src/data/layout.ts).
+-- "data" holds what the tile needs (the shape is in src/data/types.ts). Where a tile sits on the page follows from sort_order (see src/data/layout.ts).
+-- This file is the only place with the starting data, so keep it up to date by hand.
 
 create table if not exists public.projects (
   slug       text primary key,

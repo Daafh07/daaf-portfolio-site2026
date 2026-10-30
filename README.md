@@ -4,8 +4,8 @@ Personal portfolio of Daaf Heijnekamp, creative developer and designer. The desi
 ("Showcase Portfolio S3", section "V6 - Na eerste testronde"), which is the source of truth for
 layout, copy and spacing.
 
-Next.js 16 (App Router, TypeScript), Tailwind CSS v4 and Motion. Deployed on Vercel. Supabase is
-planned for the contact form and anything dynamic, but is not connected yet.
+Next.js 16 (App Router, TypeScript), Tailwind CSS v4 and Motion. Deployed on Vercel. The projects
+come from Supabase.
 
 > This Next.js version has breaking changes. Read [AGENTS.md](AGENTS.md) and the guides in
 > `node_modules/next/dist/docs/` before writing Next-specific code.
@@ -40,7 +40,7 @@ src/
     Nav.tsx               Fixed menu: out of sight while the hero is on screen, fades in once it has scrolled behind the bar (always visible on pages without a hero)
     BlobButton.tsx        Blob-shaped button
     SoundToggle.tsx       Sound on/off
-  data/                   projects.ts: the six hand-fitted projects (fallback and seed); getProjects.ts: reads Supabase; layout.ts: where a tile sits, from its number in the list
+  data/                   types.ts: the shape of a project; getProjects.ts: reads them from Supabase; layout.ts: where a tile sits, from its number in the list
   lib/
     glass/                WebGL lens (lens.ts), the painter that redraws what lies under it (scene.ts) and the magnet/snap logic (magnet.ts)
     sound/                Web Audio engine, the sound designs (no audio files) and the vibration that goes with them
@@ -76,4 +76,7 @@ body in Poppins 400/500/700.
   element (a background image, a border, a shadow) has to be taught to it. To check the painter
   against the real page, add the attribute `data-glass-raw` to `<html>` in the devtools: the lens
   then shows what was painted, without bending it.
-- Environment variables go in `.env.local` (ignored by git). None are needed yet.
+- Supabase: copy `.env.example` to `.env.local` and fill in the project URL and the publishable key
+  (never the service_role key); on Vercel set the same two variables. Run `supabase/projects.sql`
+  once in the SQL editor to create the table, its read-only rule and the starting projects. Without
+  these the site stops with a message saying what is missing.

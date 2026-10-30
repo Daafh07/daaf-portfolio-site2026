@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { SIMPLE_SIZE } from "@/data/layout";
-import type { Inset, SimpleProject } from "@/data/projects";
+import type { Inset, SimpleProject } from "@/data/types";
 import { insetStyle } from "./tileStyle";
 
 // The standard tile for a project that has no hand-fitted one: the same parts and the same hover

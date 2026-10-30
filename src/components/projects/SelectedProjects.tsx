@@ -3,7 +3,7 @@ import { BlobButton } from "@/components/BlobButton";
 import { ParallaxGrid, ParallaxTile } from "@/components/motion/ParallaxGrid";
 import { getProjects } from "@/data/getProjects";
 import { GRID_WIDTH, placeTiles } from "@/data/layout";
-import { isCustomProject } from "@/data/projects";
+import { isCustomProject } from "@/data/types";
 import { GenericTile } from "./GenericTile";
 import { ProjectTile } from "./ProjectTile";
 

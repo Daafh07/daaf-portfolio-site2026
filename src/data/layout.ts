@@ -1,4 +1,4 @@
-import { isCustomProject, type AnyProject } from "./projects";
+import { isCustomProject, type AnyProject } from "./types";
 
 // The desktop grid of "Selected Projects" in design px: three columns that start at different
 // heights (the staggered look of the design), row after row. Where a tile sits follows from its
