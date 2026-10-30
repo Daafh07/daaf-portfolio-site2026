@@ -105,33 +105,9 @@ html:has(#top) .site-nav:not([data-past-hero]):not(:has(:focus-visible)) {
   }
 }
 
-/* The statement's backdrop. Each ring draws itself (a line that grows around the circle from its own
-   starting point, clockwise or not) from --start of --q, over --span of it. The stroke is a gradient
-   that fades along the ring, and has a soft glow. */
-.statement-ring {
-  fill: none;
-  stroke-width: 3px;
-  stroke-linecap: round;
-  vector-effect: non-scaling-stroke;
-  stroke-dasharray: 1;
-  stroke-dashoffset: calc(1 - clamp(0, (var(--q) - var(--start)) / var(--span), 1));
-  transform-box: fill-box;
-  transform-origin: center;
-  transform: rotate(calc(var(--rot) * 1deg)) scaleY(var(--dir));
-}
-.statement-rings {
-  filter: drop-shadow(0 0 6px #f9007e66);
-  transition: opacity 0.5s ease;
-}
-/* The moment the sentence is complete the lines fade away (until you scroll back), so the wave runs
-   over an empty backdrop; the wave waits for it (see its delay below). */
-[data-done] .statement-rings {
-  opacity: 0;
-  transition: opacity 0.35s ease;
-}
-
 /* When the sentence is complete (data-done), three pink rings run out from the middle, one after
-   the other, and fade as they go. Taking data-done away (scrolling back) puts them away again. */
+   the other, and fade as they go, with the dots blown ahead of them (see StatementParticles).
+   Taking data-done away (scrolling back) puts them away again. */
 .statement-wave {
   position: absolute;
   top: 0;
@@ -172,12 +148,6 @@ html:has(#top) .site-nav:not([data-past-hero]):not(:has(:focus-visible)) {
 @media (prefers-reduced-motion: reduce) {
   .statement-wave {
     display: none;
-  }
-  .statement-ring {
-    stroke-dashoffset: 0;
-  }
-  [data-done] .statement-rings {
-    opacity: 1;
   }
 }
 
