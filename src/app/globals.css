@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #080808;
+  --fg: #fafafa;
+  --sub: #cecece;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-fg: var(--fg);
+  --color-sub: var(--sub);
+  --font-blur: var(--font-blur), sans-serif;
+  --font-body: "Poppins", sans-serif;
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: "Poppins", sans-serif;
+}
+
+html {
+  /* Keeps the layout from shifting when the intro locks scrolling. */
+  scrollbar-gutter: stable;
+}
+
+/* Intro: only active while the gate script marks <html data-intro="playing">. */
+.intro {
+  display: none;
+}
+
+html[data-intro="playing"] {
+  overflow: hidden;
+}
+
+html[data-intro="playing"] .intro {
+  display: block;
+}
+
+html[data-intro="playing"] [data-intro-target] {
+  opacity: 0;
+}
+
