@@ -35,7 +35,7 @@ src/
     intro/                The intro, see below
     introduction/         The section after the hero: photo fan (with its reveal and hover, all in fanMotion.ts) and the introduction text
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
-    Nav.tsx               Fixed menu (built, not on the page yet)
+    Nav.tsx               Fixed menu: out of sight while the hero is on screen, fades in once it has scrolled behind the bar (always visible on pages without a hero)
     BlobButton.tsx        Blob-shaped button
     SoundToggle.tsx       Sound on/off
   lib/
@@ -68,4 +68,8 @@ body in Poppins 400/500/700.
 
 - `src/fonts/Blur-Bold.ttf` is a commercial typeface (Neville Brody, FontShop) and is included in this
   repository because the site needs it to build. Check that your license covers web use and redistribution.
+- The glass lens redraws the page under it by hand (`src/lib/glass/scene.ts`), so a new kind of
+  element (a background image, a border, a shadow) has to be taught to it. To check the painter
+  against the real page, add the attribute `data-glass-raw` to `<html>` in the devtools: the lens
+  then shows what was painted, without bending it.
 - Environment variables go in `.env.local` (ignored by git). None are needed yet.
