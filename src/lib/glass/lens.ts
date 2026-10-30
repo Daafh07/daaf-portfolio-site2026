@@ -7,8 +7,8 @@ export const LENS_SIZE = 122;
 /** The mini ball that follows the cursor everywhere else. */
 export const LENS_MINI = 44;
 export const GLASS_CANVAS_SIZE = 320;
-const TEXTURE_SIZE = GLASS_CANVAS_SIZE;
-const WIDTH = GLASS_CANVAS_SIZE;
+/** Wide buttons (a lens snapped around them) need a wider canvas than the 320px square; it only grows for them. */
+export const GLASS_CANVAS_WIDE = 720;
 const HEIGHT = GLASS_CANVAS_SIZE;
 const RESOLUTION = 2;
 
@@ -23,12 +23,13 @@ const fragment = `
 precision highp float;
 uniform sampler2D scene;
 uniform float pixelRatio;
+uniform vec2 size; // canvas size in css px
 uniform vec4 shape; // width, height, corner radius, snap amount
 uniform float rim; // 0 for the big hero lens, 1 for the mini ball: adds a glass edge
 uniform float raw; // diagnostic: 1 shows the painted scene without any bending (see data-glass-raw)
 varying vec2 uv;
 void main() {
-  vec2 p = (uv - .5) * 320.;
+  vec2 p = (uv - .5) * size;
   float radius = min(shape.x, shape.y) * .5;
   float corner = min(shape.z, radius);
   vec2 q = abs(p) - shape.xy * .5 + corner;
@@ -40,11 +41,11 @@ void main() {
   vec2 direction = normalize(edgeDirection + .00001);
   float strength = mix(4.05, .6, shape.w);
   float displacement = pow(r, 5.5 * radius * pixelRatio / 100.) * strength * 40. * .95 / pixelRatio * (1. - raw);
-  vec2 sampleUv = .5 + (p - direction * displacement) / 320.;
+  vec2 sampleUv = .5 + (p - direction * displacement) / size;
   sampleUv.y = 1. - sampleUv.y;
   // The colour fringe fades out as the lens is toned down (small lens, buttons): on a light shape on
   // a dark page it would turn into thick coloured bands along the edge.
-  vec2 split = vec2(direction.x, -direction.y) * .18 * (1. - shape.w) * (1. - raw) * .02 * r * 247. / 320.;
+  vec2 split = vec2(direction.x, -direction.y) * .18 * (1. - shape.w) * (1. - raw) * .02 * r * 247. / size;
   vec3 color = vec3(texture2D(scene, sampleUv + split).r,
                     texture2D(scene, sampleUv).g,
                     texture2D(scene, sampleUv - split).b);
@@ -91,12 +92,16 @@ export function createGlassLens(canvas: HTMLCanvasElement) {
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error("Shader linking failed");
   } catch { dispose(); return null; }
   const source = document.createElement("canvas");
-  source.width = source.height = TEXTURE_SIZE * RESOLUTION;
+  let cw = GLASS_CANVAS_SIZE;
   const ctx = source.getContext("2d");
   if (!ctx) { dispose(); return null; }
-  canvas.width = WIDTH * RESOLUTION;
-  canvas.height = HEIGHT * RESOLUTION;
-  gl.viewport(0, 0, canvas.width, canvas.height);
+  const resize = (next: number) => {
+    cw = next;
+    source.width = canvas.width = cw * RESOLUTION;
+    source.height = canvas.height = HEIGHT * RESOLUTION;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  };
+  resize(cw);
   gl.useProgram(program);
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, -1,1, 1,-1, 1,1]), gl.STATIC_DRAW);
@@ -111,19 +116,25 @@ export function createGlassLens(canvas: HTMLCanvasElement) {
   gl.uniform1i(gl.getUniformLocation(program, "scene"), 0);
   const shapeLocation = gl.getUniformLocation(program, "shape");
   const pixelRatio = gl.getUniformLocation(program, "pixelRatio");
+  const sizeLocation = gl.getUniformLocation(program, "size");
   const rimLocation = gl.getUniformLocation(program, "rim");
   const rawLocation = gl.getUniformLocation(program, "raw");
 
   return {
+    get canvasWidth() { return cw; },
     draw(x: number, y: number, width = LENS_SIZE, height = LENS_SIZE, corner = LENS_SIZE / 2, snap = 0, rim = 0, raw = 0) {
       if (gl.isContextLost()) throw new Error("WebGL context lost");
+      // Wider only while something wide is wrapped (with a margin, so a springy edge doesn't flip it back and forth).
+      const wanted = width > GLASS_CANVAS_SIZE - 20 ? GLASS_CANVAS_WIDE : width < GLASS_CANVAS_SIZE - 40 ? GLASS_CANVAS_SIZE : cw;
+      if (wanted !== cw) resize(wanted);
       ctx.setTransform(RESOLUTION, 0, 0, RESOLUTION, 0, 0);
       ctx.fillStyle = getComputedStyle(document.body).backgroundColor;
-      ctx.fillRect(0, 0, TEXTURE_SIZE, TEXTURE_SIZE);
-      ctx.translate(TEXTURE_SIZE / 2 - x, TEXTURE_SIZE / 2 - y);
-      paintScene(ctx, { left: x - TEXTURE_SIZE / 2, top: y - TEXTURE_SIZE / 2, right: x + TEXTURE_SIZE / 2, bottom: y + TEXTURE_SIZE / 2 });
+      ctx.fillRect(0, 0, cw, HEIGHT);
+      ctx.translate(cw / 2 - x, HEIGHT / 2 - y);
+      paintScene(ctx, { left: x - cw / 2, top: y - HEIGHT / 2, right: x + cw / 2, bottom: y + HEIGHT / 2 });
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
       gl.uniform1f(pixelRatio, window.devicePixelRatio || 1);
+      gl.uniform2f(sizeLocation, cw, HEIGHT);
       gl.uniform4f(shapeLocation, width, height, corner, snap);
       gl.uniform1f(rimLocation, rim);
       gl.uniform1f(rawLocation, raw);

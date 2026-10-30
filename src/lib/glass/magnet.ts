@@ -28,9 +28,9 @@ export function findSnapTarget(x: number, y: number, current: HTMLElement | null
   const eligible = (element: HTMLElement) => {
     const box = snapBox(element);
     const style = getComputedStyle(element);
-    return element.isConnected && box.width > 0 && box.height > 0 && box.width < 280 && box.height < 280 &&
+    return element.isConnected && box.width > 0 && box.height > 0 && (element.hasAttribute("data-glass-snap") || (box.width < 280 && box.height < 280)) &&
       style.visibility === "visible" && style.display !== "none" && Number(style.opacity) > 0 &&
-      !element.closest('[inert], [disabled], [aria-disabled="true"], [data-glass-ignore], .intro');
+      !element.closest('[inert], [disabled], [aria-disabled="true"], [data-glass-ignore], [data-glass-lens], .intro');
   };
   if (current && eligible(current) && distanceToBox(x, y, snapBox(current)) <= RELEASE_DISTANCE) return current;
   let closest: HTMLElement | null = null;

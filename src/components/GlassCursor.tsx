@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { animate } from "motion";
+import { sound } from "@/lib/sound/engine";
 import { createGlassLens, LENS_MINI, LENS_SIZE, GLASS_CANVAS_SIZE } from "@/lib/glass/lens";
 import { findSnapTarget, isMagneticIcon, magneticOffsets, restingBox, snapBox } from "@/lib/glass/magnet";
 
@@ -13,6 +14,9 @@ const DOT_SIZE = 10;
 // one grows to fit it. `blend` is how much the refraction is toned down (0 = full, 1 = least).
 const HERO = { size: LENS_SIZE, blend: 0 };
 const PAGE = { size: LENS_MINI, blend: 0.55 };
+// Over a project tile (marked data-glass-lens) the lens grows into a big round one that follows
+// the pointer, so the tile is seen through it. It is not snapped to the tile.
+const PROJECT = { size: 240, blend: 0.15 };
 // On the hero the lens floats this far above the pointer (as on the reference). The mini ball is
 // centred on it, so the dot sits in its middle.
 const LIFT = 6;
@@ -34,6 +38,8 @@ export function GlassCursor() {
     let frame = 0, last = 0, pointerX = 0, pointerY = 0;
     let x = 0, y = 0, vx = 0, vy = 0, visible = false;
     let snapped: HTMLElement | null = null;
+    // Where the snapped element was when the lens last aimed at it, to see whether it has moved.
+    const follow: number[] = [];
     let base = HERO, activeUntil = 0;
     // Width/height, attachment amount, attachment position, optical control blend.
     const shape = [LENS_SIZE, LENS_SIZE, 0, 0, 0, 0];
@@ -62,6 +68,14 @@ export function GlassCursor() {
       frame = 0;
       if (!visible || document.documentElement.dataset.intro === "playing") { hide(); return; }
       if (snapped && !snapped.isConnected) { hide(); return; }
+      // The snapped element may still be moving (a card lifting in, the page scrolling): keep the lens on it.
+      if (snapped) {
+        const box = snapBox(snapped);
+        const padding = (isMagneticIcon(snapped) ? 8.3 : 10) * .95;
+        const goal = [box.width + padding * 2, box.height + padding * 2, 1, box.left + box.width / 2, box.top + box.height / 2];
+        for (const index of [0, 1, 3, 4]) if (Math.abs(goal[index] - (follow[index] ?? goal[index])) > .5) spring(index, goal[index]);
+        for (const index of [0, 1, 3, 4]) follow[index] = goal[index];
+      }
       const dt = Math.min((now - last) / 1000, .04);
       last = now;
       const aimY = pointerY - lift();
@@ -104,7 +118,9 @@ export function GlassCursor() {
       const raw = document.documentElement.hasAttribute("data-glass-raw") ? 1 : 0;
       try { lens?.draw(cx, cy, width, height, Math.min(width, height) / 2, Math.max(0, Math.min(1, shape[5])), rim, raw); }
       catch { hide(); return; }
-      canvas.style.transform = `translate3d(${cx - GLASS_CANVAS_SIZE / 2}px, ${cy - GLASS_CANVAS_SIZE / 2}px, 0)`;
+      const canvasWidth = lens?.canvasWidth ?? GLASS_CANVAS_SIZE;
+      canvas.style.width = `${canvasWidth}px`;
+      canvas.style.transform = `translate3d(${cx - canvasWidth / 2}px, ${cy - GLASS_CANVAS_SIZE / 2}px, 0)`;
       canvas.style.opacity = "1";
       document.documentElement.setAttribute("data-glass-cursor", "");
       if (moving || animations.size || now < activeUntil) frame = requestAnimationFrame(draw);
@@ -129,7 +145,7 @@ export function GlassCursor() {
       pointerX = clientX;
       pointerY = clientY;
       // The big lens belongs to the hero (and to what is snapped inside it), the mini ball to the rest.
-      const wanted = (next ?? target).closest("#top") ? HERO : PAGE;
+      const wanted = (next ?? target).closest("#top") ? HERO : (next ?? target).closest("[data-glass-lens]") ? PROJECT : PAGE;
       if (!visible) {
         base = wanted;
         x = pointerX; y = pointerY - LIFT * (base === HERO ? 1 : 0); vx = vy = 0;
@@ -150,6 +166,7 @@ export function GlassCursor() {
         if (snapped) {
           const box = snapBox(snapped);
           const icon = isMagneticIcon(snapped);
+          sound.play("glassSnap", icon ? 1 : 0.3);
           // Hero variant's padding parses to 8.3px in the reference, base cursor to 10px.
           const padding = (icon ? 8.3 : 10) * .95;
           spring(0, box.width + padding * 2);
@@ -157,6 +174,8 @@ export function GlassCursor() {
           spring(2, 1);
           spring(3, box.left + box.width / 2);
           spring(4, box.top + box.height / 2);
+          follow.length = 0;
+          follow.push(box.width + padding * 2, box.height + padding * 2, 1, box.left + box.width / 2, box.top + box.height / 2);
           spring(5, icon ? 0 : 1);
           if (icon && !icons.has(snapped)) icons.set(snapped, { x: 0, y: 0, vx: 0, vy: 0, original: snapped.style.translate });
         } else {
@@ -176,9 +195,16 @@ export function GlassCursor() {
     const scrolled = () => {
       if (visible) update(pointerX, pointerY, document.elementFromPoint(pointerX, pointerY));
     };
+    const click = (event: MouseEvent) => {
+      if (document.documentElement.dataset.intro === "playing" || !(event.target instanceof Element)) return;
+      const control = event.target.closest('a[href], button, [role="button"], [data-glass-snap], [data-intro-target="sticker"]');
+      if (!control || control.closest('[disabled], [aria-disabled="true"], [inert], [data-sound-toggle]')) return;
+      void sound.unlock().then(() => sound.play("glassClick"));
+    };
     const leave = (event: PointerEvent) => { if (!event.relatedTarget) hide(); };
     const contextLost = (event: Event) => { event.preventDefault(); hide(); };
     const restored = () => { lens?.dispose(); lens = null; };
+    window.addEventListener("click", click);
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("pointerdown", move, { passive: true });
     window.addEventListener("pointercancel", hide);
@@ -192,6 +218,7 @@ export function GlassCursor() {
     canvas.addEventListener("webglcontextrestored", restored);
     return () => {
       hide(); lens?.dispose();
+      window.removeEventListener("click", click);
       window.removeEventListener("pointermove", move);
       window.removeEventListener("pointerdown", move);
       window.removeEventListener("pointercancel", hide);
