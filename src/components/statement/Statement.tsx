@@ -1,14 +1,14 @@
 "use client";
 
 import { useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
-import { Fragment, useEffect, useRef, useState } from "react";
-import { Particles, type ParticlesHandle } from "@/components/particles/Particles";
+import { Fragment, useEffect, useRef } from "react";
+import { StatementParticles, type ParticlesHandle } from "./StatementParticles";
 
 // The one sentence that says what I stand for, in the heading font, with the last words in the
 // pink of the first project. The screen stays put (sticky) while you scroll through it, and the
-// sentence types itself out, letter by letter, with a pink cursor. Behind it, a shape made of pink
-// dots takes the next shape as you scroll (circle, square, flower); when the sentence is complete,
-// a pink wave runs out from the middle and blows the dots away.
+// sentence types itself out, letter by letter, with a pink cursor. Behind it, pink dots on loose
+// circles draw and turn as you scroll (StatementParticles); when the sentence is complete, a pink
+// wave runs out from the middle and blows the dots away.
 const PARTS = [
   { text: "Most websites look like the template they came from. I would rather spend the extra week and make yours ", pink: false },
   { text: "look like you.", pink: true },
@@ -25,12 +25,6 @@ const WORDS = PARTS.flatMap(({ text, pink }) =>
 );
 const TOTAL = count;
 
-// The dots take the next shape at these points of the typing (see Particles).
-const SHAPE_BY_PROGRESS = [
-  [0, "Circle"],
-  [0.34, "Square"],
-  [0.67, "Flower"],
-] as const;
 const SCROLL = 150; // svh of scrolling that the screen stays still for
 const TYPED_BY = 0.72; // the sentence is complete this far into that scroll; the rest is a pause
 
@@ -39,8 +33,6 @@ export function Statement() {
   const stage = useRef<HTMLDivElement>(null);
   const cursor = useRef<HTMLElement | null>(null);
   const particles = useRef<ParticlesHandle>(null);
-  const [shape, setShape] = useState<(typeof SHAPE_BY_PROGRESS)[number][1]>("Circle");
-  const wasDone = useRef(false);
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: track, offset: ["start start", "end end"] });
 
@@ -55,10 +47,8 @@ export function Statement() {
     const complete = q >= 1 && !reduced;
     if (complete) element.setAttribute("data-done", "");
     else element.removeAttribute("data-done");
-    // The dots change shape as the sentence is typed; when it is complete they are blown away.
-    setShape(SHAPE_BY_PROGRESS.findLast(([from]) => q >= from)?.[1] ?? "Circle");
-    if (complete && !wasDone.current) particles.current?.burst();
-    wasDone.current = complete;
+    particles.current?.setProgress(q);
+    particles.current?.setDone(complete);
     // The cursor sits on the last letter that has begun, until all are typed.
     const index = typed > 0 && typed < TOTAL ? Math.min(TOTAL - 1, Math.floor(typed)) : -1;
     const next = index >= 0 ? element.querySelector<HTMLElement>(`[data-i="${index}"]`) : null;
@@ -84,11 +74,8 @@ export function Statement() {
         style={{ "--typed": 0, "--q": 0 } as React.CSSProperties}
         className="sticky top-0 flex h-svh items-center overflow-hidden motion-reduce:static motion-reduce:h-auto motion-reduce:py-24"
       >
-        {/* Dots that make a shape, and take the next one as you scroll; the wave blows them away. The
-            pointer pushes them (Bencho's Particles). They are only there once the typing has begun. */}
-        <div aria-hidden className="statement-dots pointer-events-none absolute inset-0 grid place-items-center">
-          <Particles ref={particles} shape={shape} fit grain="Coarse" reach={110} force={70} />
-        </div>
+        {/* The dots on loose circles: they draw and turn as you scroll, and the wave blows them away. */}
+        <StatementParticles ref={particles} still={!!reduced} />
         {/* The wave: rings of light that run out from the middle once the sentence is complete. */}
         <div aria-hidden className="pointer-events-none absolute top-1/2 left-1/2 size-0">
           {[0, 1, 2].map((wave) => (
@@ -98,7 +85,7 @@ export function Statement() {
 
         <p
           aria-label={PARTS.map((part) => part.text).join("")}
-          className="pointer-events-none relative mx-auto w-full max-w-[1032px] px-6 font-blur text-[26px] leading-[34px] text-fg md:text-[36px] md:leading-[48px]"
+          className="relative mx-auto w-full max-w-[1032px] px-6 font-blur text-[26px] leading-[34px] text-fg md:text-[36px] md:leading-[48px]"
         >
           {WORDS.map((word, wordIndex) => (
             <Fragment key={wordIndex}>
