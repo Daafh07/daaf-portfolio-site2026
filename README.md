@@ -35,12 +35,15 @@ src/
     intro/                The intro, see below
     introduction/         The section after the hero: photo fan (with its reveal and hover, all in fanMotion.ts) and the introduction text
     projects/             "Selected Projects": the grid, a hand-fitted tile (ProjectTile) and the standard tile for new projects (GenericTile)
-    motion/               Reveal: lifts its content in when it scrolls into view
+    services/             "How I can help": the dock of five blobs with the panel of the one picked, and the four steps that open while you scroll
+    statement/            The one-sentence statement
+    about/                "How I got here": the story and the facts next to it
+    motion/               Reveal (lifts content in when it scrolls into view) and ParallaxGrid (the columns of the project grid drift while you scroll)
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
     Nav.tsx               Fixed menu: out of sight while the hero is on screen, fades in once it has scrolled behind the bar (always visible on pages without a hero)
     BlobButton.tsx        Blob-shaped button
     SoundToggle.tsx       Sound on/off
-  data/                   types.ts: the shape of a project; getProjects.ts: reads them from Supabase; layout.ts: where a tile sits, from its number in the list
+  data/                   types.ts: the shape of a project; getProjects.ts: reads them from Supabase; layout.ts: where a tile sits, from its number in the list; services.ts: the copy of "How I can help"
   lib/
     glass/                WebGL lens (lens.ts), the painter that redraws what lies under it (scene.ts) and the magnet/snap logic (magnet.ts)
     sound/                Web Audio engine, the sound designs (no audio files) and the vibration that goes with them
@@ -49,6 +52,7 @@ public/
   hero/                   Icons around the wordmark
   ui/                     Shared UI artwork
   projects/<slug>/        Artwork of one tile: blob, logo, hover preview, badge, arrow
+  services/               The five blobs of the dock
 ```
 
 ## The intro
