@@ -1,5 +1,7 @@
 // The projects shown as tiles in "Selected Projects" and as pages under /projects/[slug].
 //
+// Where a tile sits on desktop is worked out from its number in the list (see ./layout.ts).
+//
 // Every position is a percentage of the tile (Figma's "inset": top, right, bottom, left), so a
 // tile scales as one piece. The numbers come from the tile components in Figma, section
 // "V6 - Na eerste testronde" (Tile/Intermezzo and so on, states Default and Hover).
@@ -18,8 +20,6 @@ export type Project = {
   hoverLabelColor?: string;
   /** Size of the tile in the design (px). Only its proportions matter. */
   size: { w: number; h: number };
-  /** Where the tile sits in the desktop grid of 984 x 760 (design px). */
-  grid: { x: number; y: number };
   /** The shape of the tile (a hand-drawn blob). `inset` is how far the blob lies inside its own picture. */
   blob: { inset: Inset };
   /** The logo or picture in the middle of the default state. */
@@ -50,13 +50,31 @@ export type Project = {
   tag?: { text: string; box: Inset; blobInset: Inset; textBox: Inset };
 };
 
+/**
+ * A new project only needs these fields. It gets a standard tile (see GenericTile): one of the
+ * three blob shapes in the project colour, the logo (or the name) and a hover preview.
+ * The six projects below have their own hand-fitted tile instead (see ProjectTile).
+ */
+export type SimpleProject = {
+  slug: string;
+  name: string;
+  color: string;
+  hoverLabelColor?: string;
+  /** A logo picture (url). Without one the name is shown on the blob. */
+  logoUrl?: string;
+  /** A picture shown in the blob on hover (url). */
+  previewUrl?: string;
+};
+
+export type AnyProject = Project | SimpleProject;
+export const isCustomProject = (project: AnyProject): project is Project => "blob" in project;
+
 export const PROJECTS: Project[] = [
   {
     slug: "intermezzo",
     name: "Intermezzo",
     color: "#f9007e",
     size: { w: 324.5, h: 316 },
-    grid: { x: 0, y: 25 },
     blob: { inset: [0.22, 0.33, 0.53, 0.45] },
     logo: { kind: "image", src: "/projects/intermezzo/logo.png", inset: [17.09, 23.88, 24.37, 19.11], radius: 10.79 },
     label: [89.87, 20.7, 3.48, 47.46],
@@ -69,7 +87,6 @@ export const PROJECTS: Project[] = [
     name: "InternetNeeds",
     color: "#2451e8",
     size: { w: 311, h: 313 },
-    grid: { x: 337.5, y: 106 },
     blob: { inset: [1.44, 1.23, 1.06, 0.64] },
     logo: { kind: "image", src: "/projects/internetneeds/logo.svg", inset: [23.32, 25.24, 27.16, 24.92] },
     label: [91.37, 17.2, 1.92, 46.78],
@@ -82,7 +99,6 @@ export const PROJECTS: Project[] = [
     // Figma uses the dark project green for the name on hover, which hardly reads on the dark page.
     hoverLabelColor: "#6fcfa4",
     size: { w: 325.5, h: 319 },
-    grid: { x: 658.5, y: 0 },
     blob: { inset: [0.96, 2.03, 0.51, 1.51] },
     logo: { kind: "image", src: "/projects/npulse-pave/logo.svg", inset: [33.23, 21.81, 42.01, 21.66] },
     label: [89.97, 18.13, 3.45, 47.16],
@@ -93,7 +109,6 @@ export const PROJECTS: Project[] = [
     name: "LiveWall",
     color: "#d1ff00",
     size: { w: 315.5, h: 310 },
-    grid: { x: 0, y: 372 },
     blob: { inset: [0.22, 0.33, 0.53, 0.45] },
     logo: {
       kind: "image",
@@ -110,7 +125,6 @@ export const PROJECTS: Project[] = [
     color: "#2c2c2c",
     hoverLabelColor: "#f4f4ed",
     size: { w: 311, h: 313 },
-    grid: { x: 337.5, y: 447 },
     blob: { inset: [1.44, 1.23, 1.06, 0.64] },
     logo: { kind: "image", src: "/projects/pitwall/logo.png", inset: [25.24, 24.92, 24.92, 24.92] },
     label: [91.37, 16.88, 1.92, 47.11],
@@ -121,15 +135,11 @@ export const PROJECTS: Project[] = [
     name: "EduCheck",
     color: "#e19fff",
     size: { w: 325.5, h: 319 },
-    grid: { x: 658.5, y: 341 },
     blob: { inset: [0.96, 2.03, 0.51, 1.51] },
     logo: { kind: "text", text: "Edu Check", inset: [46.08, 21.51, 45.77, 21.66], size: 37, lineHeight: 22, color: "#222" },
     label: [90.28, 17.82, 3.13, 47.47],
     badge: [89.18, 8.29, 2.82, 83.87],
   },
 ];
-
-/** The desktop grid the tiles sit in (design px). */
-export const GRID = { w: 984, h: 760 };
 
 export const projectBySlug = (slug: string) => PROJECTS.find((project) => project.slug === slug);

@@ -34,13 +34,13 @@ src/
     hero/                 The hero: wordmark and the six floating icons (positions in stickers.ts)
     intro/                The intro, see below
     introduction/         The section after the hero: photo fan (with its reveal and hover, all in fanMotion.ts) and the introduction text
-    projects/             "Selected Projects": the grid of six tiles, and one tile (ProjectTile) with its hover
+    projects/             "Selected Projects": the grid, a hand-fitted tile (ProjectTile) and the standard tile for new projects (GenericTile)
     motion/               Reveal: lifts its content in when it scrolls into view
     GlassCursor.tsx       Liquid glass cursor, on every page: big lens on the hero, mini ball elsewhere, grows to fit buttons, links and icons
     Nav.tsx               Fixed menu: out of sight while the hero is on screen, fades in once it has scrolled behind the bar (always visible on pages without a hero)
     BlobButton.tsx        Blob-shaped button
     SoundToggle.tsx       Sound on/off
-  data/                   projects.ts: the projects, with where everything sits in a tile (later from Supabase)
+  data/                   projects.ts: the six hand-fitted projects (fallback and seed); getProjects.ts: reads Supabase; layout.ts: where a tile sits, from its number in the list
   lib/
     glass/                WebGL lens (lens.ts), the painter that redraws what lies under it (scene.ts) and the magnet/snap logic (magnet.ts)
     sound/                Web Audio engine, the sound designs (no audio files) and the vibration that goes with them

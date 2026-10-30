@@ -2,14 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import type { Inset, Project } from "@/data/projects";
-
-const pct = (value: number) => `${value}%`;
-const insetStyle = ([top, right, bottom, left]: Inset): CSSProperties => ({
-  top: pct(top),
-  right: pct(right),
-  bottom: pct(bottom),
-  left: pct(left),
-});
+import { insetStyle, pct } from "./tileStyle";
 
 // The badge picture lies a little inside the badge's box, the same for every tile.
 const BADGE_PICTURE: Inset = [3.36, 3.64, 0.75, 0.93];
