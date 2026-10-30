@@ -15,6 +15,8 @@ export const INTRO = {
    * load can't change a later visit.
    */
   replayKey: "daaf-intro-replay",
+  /** The event the menu's logo sends to start the intro again on the page that is already open. */
+  replayEvent: "daaf:intro-replay",
   replayWindow: 10_000,
 
   /** Play the slingshot mini game before the letters sequence, or start the sequence right away. */

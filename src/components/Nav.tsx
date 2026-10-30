@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, type MouseEvent } from "react";
 import { sound } from "@/lib/sound/engine";
 import { BlobButton } from "@/components/BlobButton";
@@ -21,24 +22,26 @@ const BAR = 72;
 // every page that has a hero); it fades in once the hero has scrolled behind the bar. Pages
 // without a hero show it right away. This component only reports whether the hero is passed, with
 // the attribute data-past-hero. On a phone only the wordmark and the Contact button are shown.
-// A click on the logo plays the intro again, without the game: leave a note for the gate script in
-// the page head, then load the homepage afresh. Not with reduced motion (no intro then) or with a
-// modifier key (open in a new tab): those keep the plain link.
-function replayIntro(event: MouseEvent<HTMLAnchorElement>) {
+// A click on the logo plays the intro again, without the game. On the homepage that happens on the
+// page that is already open (the click keeps the page "touched", so the browser allows sound); from
+// another page it leaves a note and goes to the homepage, whose intro finds the note. Not with
+// reduced motion (no intro then) or with a modifier key (open in a new tab): those keep the plain link.
+function replayIntro(event: MouseEvent<HTMLAnchorElement>, push: (href: string) => void) {
   if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
   if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  try {
-    sessionStorage.setItem(INTRO.replayKey, String(Date.now()));
-  } catch {
+  event.preventDefault();
+  if (location.pathname === "/") {
+    window.dispatchEvent(new Event(INTRO.replayEvent));
     return;
   }
-  event.preventDefault();
-  // A full load on purpose: only the gate in the page head can start the intro.
-  // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-  window.location.href = "/";
+  try {
+    sessionStorage.setItem(INTRO.replayKey, String(Date.now()));
+  } catch {}
+  push("/");
 }
 
 export function Nav() {
+  const router = useRouter();
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -81,7 +84,7 @@ export function Nav() {
   return (
     <header ref={ref} className="site-nav fixed inset-x-0 top-0 z-40 bg-bg/92">
       <nav aria-label="Main" className="mx-auto flex h-16 max-w-[1032px] items-center justify-between px-6 md:h-[72px]">
-        <Link href="/#top" onClick={replayIntro} className="font-blur text-2xl leading-none text-fg">
+        <Link href="/#top" onClick={(event) => replayIntro(event, router.push)} className="font-blur text-2xl leading-none text-fg">
           Daaf
         </Link>
         <div className="flex items-center gap-[30px]">

@@ -39,6 +39,16 @@ html[data-intro="playing"] .intro {
   display: block;
 }
 
+/* When the intro is played again on the open page, the curtain fades in instead of cutting in. */
+@keyframes intro-in {
+  from {
+    opacity: 0;
+  }
+}
+html[data-intro="playing"] .intro-replay {
+  animation: intro-in 0.3s ease-out;
+}
+
 html[data-intro="playing"] [data-intro-target] {
   opacity: 0;
 }

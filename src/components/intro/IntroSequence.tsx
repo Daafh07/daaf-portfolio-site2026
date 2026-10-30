@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useIntroSound } from "./useIntroSound";
 import { SoundToggle } from "@/components/SoundToggle";
 import { INTRO, introTimeline } from "./introConfig";
@@ -37,10 +37,53 @@ export function IntroSequence() {
   const [grabbed, setGrabbed] = useState(false);
   // Whether the slingshot game is part of this run (not when the logo in the menu asked for the intro).
   const [withGame, setWithGame] = useState(false);
+  // Bumped to run the intro again on the open page (a click on the logo in the menu).
+  const [run, setRun] = useState(0);
+  const [replayed, setReplayed] = useState(false);
   const timers = useRef<number[]>([]);
   const startRef = useRef<(geometry: IntroGeometry) => void>(() => {});
 
   useIntroSound(letterPhase[phase], stickerPhase, geometry);
+
+  // Plays the intro again on this page, without the game: back to the start, then the effect below
+  // runs once more. The click that asked for it keeps the page "touched", so sound is allowed.
+  const replay = useCallback(() => {
+    const root = document.documentElement;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    root.dataset.intro = "playing";
+    delete root.dataset.introGame;
+    setActive(true);
+    setGeometry(null);
+    setPhase("waiting");
+    setStickerPhase("hidden");
+    setImpact(null);
+    setGrabbed(false);
+    setWithGame(false);
+    setReplayed(true);
+    setRun((n) => n + 1);
+  }, []);
+
+  useEffect(() => {
+    const onReplay = () => replay();
+    window.addEventListener(INTRO.replayEvent, onReplay);
+    // Arrived from another page by the logo: it left a note (with the time) that is still fresh.
+    // The note goes only when the intro really starts, so an effect that is set up twice
+    // (development) or cancelled before it fired does not lose it.
+    let later = 0;
+    try {
+      const note = Number(sessionStorage.getItem(INTRO.replayKey));
+      if (note > 0 && Date.now() - note < INTRO.replayWindow) {
+        later = window.setTimeout(() => {
+          sessionStorage.removeItem(INTRO.replayKey);
+          replay();
+        }, 0);
+      }
+    } catch {}
+    return () => {
+      window.clearTimeout(later);
+      window.removeEventListener(INTRO.replayEvent, onReplay);
+    };
+  }, [replay]);
 
   useEffect(() => {
     // Not playing: the CSS already hides the (empty) intro layer.
@@ -104,8 +147,9 @@ export function IntroSequence() {
       cancelled = true;
       release();
       pending.forEach(clearTimeout);
+      pending.length = 0;
     };
-  }, []);
+  }, [run]);
 
   const onImpact = (point: ImpactPoint) => {
     if (!geometry) return;
@@ -122,7 +166,7 @@ export function IntroSequence() {
 
   return (
     // Hidden by CSS unless <html data-intro="playing">, so it is in the server HTML without flashing.
-    <div className="intro pointer-events-none fixed inset-0 z-50">
+    <div className={`intro pointer-events-none fixed inset-0 z-50 ${replayed ? "intro-replay" : ""}`}>
       {/* White letters on the dark page, revealed as the curtain clips away. */}
       {geometry && (
         <div aria-hidden className="absolute inset-0">
