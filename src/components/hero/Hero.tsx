@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { ScrollHint } from "./ScrollHint";
 import { STICKERS, WORDMARK } from "./stickers";
 
 const NAME = "Daaf";
@@ -43,6 +44,7 @@ export function Hero() {
           />
         ))}
       </div>
+      <ScrollHint />
     </section>
   );
 }
