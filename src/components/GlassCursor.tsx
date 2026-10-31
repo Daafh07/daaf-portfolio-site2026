@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { animate } from "motion";
 import { sound } from "@/lib/sound/engine";
 import { createGlassLens, LENS_MINI, LENS_SIZE, GLASS_CANVAS_SIZE } from "@/lib/glass/lens";
+import { INTRO } from "@/components/intro/introConfig";
 import { findSnapTarget, isMagneticIcon, magneticOffsets, restingBox, snapBox } from "@/lib/glass/magnet";
 
 // The cursor point: a small dot exactly on the pointer, so you can see where the lens is heading.
@@ -223,8 +224,13 @@ export function GlassCursor() {
     // Open the site with ?demo and the lens roams the hero by itself: it sweeps across the letters and
     // rests on each icon in turn, so the glass and the magnet of the icons can be seen without a mouse.
     // A real mouse takes over at once, and the demo carries on after DEMO_PAUSE of stillness. It only
-    // runs while the hero is on screen and the intro is over.
-    const demoOn = new URLSearchParams(window.location.search).has("demo");
+    // runs while the hero is on screen and the intro is over. When the lens has been round all the icons
+    // it waits (?demo=15 sets how many seconds, 10 by default) and the intro plays again, after which
+    // the lens starts over: a loop that can run all day.
+    const demoParams = new URLSearchParams(window.location.search);
+    const demoOn = demoParams.has("demo");
+    const demoRest = (Number(demoParams.get("demo")) || 10) * 1000;
+    let demoRestartAt = 0;
     let demoStops: { x: number; y: number; dwell: number }[] = [];
     let demoSeg = 0, demoSegStart = 0, demoRaf = 0;
     const buildStops = (from: { x: number; y: number } | null, hero: Element) => {
@@ -244,10 +250,16 @@ export function GlassCursor() {
     const demoStep = (now: number) => {
       demoRaf = requestAnimationFrame(demoStep);
       const hero = document.querySelector("[data-hero-wordmark]");
-      if (!hero || document.documentElement.dataset.intro === "playing" || document.hidden || window.scrollY > window.innerHeight * 0.5 || now < demoPausedUntil) { demoStops = []; return; }
+      if (!hero || document.documentElement.dataset.intro === "playing" || document.hidden || window.scrollY > window.innerHeight * 0.5 || now < demoPausedUntil) { demoStops = []; demoRestartAt = 0; return; }
+      if (demoRestartAt) {
+        if (now < demoRestartAt) return; // resting before the next round
+        demoRestartAt = 0;
+        window.dispatchEvent(new Event(INTRO.replayEvent));
+        return;
+      }
       if (!demoStops.length) { demoStops = buildStops(visible ? { x: pointerX, y: pointerY } : null, hero); demoSeg = 0; demoSegStart = now; }
       const a = demoStops[demoSeg], b = demoStops[demoSeg + 1];
-      if (!b) { demoStops = []; return; }
+      if (!b) { demoStops = []; hide(); demoRestartAt = now + demoRest; return; } // round done: rest, then the intro again
       const travel = Math.max(700, (Math.hypot(b.x - a.x, b.y - a.y) / 520) * 1000);
       const t = now - demoSegStart;
       if (t > travel + b.dwell * 1000) { demoSeg++; demoSegStart = now; return; }
