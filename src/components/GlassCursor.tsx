@@ -225,11 +225,11 @@ export function GlassCursor() {
     // rests on each icon in turn, so the glass and the magnet of the icons can be seen without a mouse.
     // A real mouse takes over at once, and the demo carries on after DEMO_PAUSE of stillness. It only
     // runs while the hero is on screen and the intro is over. When the lens has been round all the icons
-    // it waits (?demo=15 sets how many seconds, 10 by default) and the intro plays again, after which
+    // the intro plays again at once (?demo=5 adds a rest of 5 seconds first), after which
     // the lens starts over: a loop that can run all day.
     const demoParams = new URLSearchParams(window.location.search);
     const demoOn = demoParams.has("demo");
-    const demoRest = (Number(demoParams.get("demo")) || 10) * 1000;
+    const demoRest = (Number(demoParams.get("demo")) || 0) * 1000;
     let demoRestartAt = 0;
     let demoStops: { x: number; y: number; dwell: number }[] = [];
     let demoSeg = 0, demoSegStart = 0, demoRaf = 0;
@@ -259,7 +259,7 @@ export function GlassCursor() {
       }
       if (!demoStops.length) { demoStops = buildStops(visible ? { x: pointerX, y: pointerY } : null, hero); demoSeg = 0; demoSegStart = now; }
       const a = demoStops[demoSeg], b = demoStops[demoSeg + 1];
-      if (!b) { demoStops = []; hide(); demoRestartAt = now + demoRest; return; } // round done: rest, then the intro again
+      if (!b) { demoStops = []; hide(); demoRestartAt = now + demoRest; return; } // round done: the intro again
       const travel = Math.max(700, (Math.hypot(b.x - a.x, b.y - a.y) / 520) * 1000);
       const t = now - demoSegStart;
       if (t > travel + b.dwell * 1000) { demoSeg++; demoSegStart = now; return; }
