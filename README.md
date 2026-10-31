@@ -90,3 +90,4 @@ body in Poppins 400/500/700.
   (never the service_role key); on Vercel set the same two variables. Run `supabase/projects.sql`
   once in the SQL editor to create the table, its read-only rule and the starting projects. Without
   these the site stops with a message saying what is missing.
+- Demo mode for an open day: open the site with `?demo` (for example `localhost:4000/?demo`) and the glass lens roams the hero by itself, sweeping over the letters and resting on each icon. A real mouse takes over at once; after 6 seconds of stillness the demo carries on. It only runs while the hero is on screen.
