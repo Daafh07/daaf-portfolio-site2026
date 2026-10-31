@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react";
 import { animate } from "motion";
 import { sound } from "@/lib/sound/engine";
 import { createGlassLens, LENS_MINI, LENS_SIZE, GLASS_CANVAS_SIZE } from "@/lib/glass/lens";
-import { INTRO } from "@/components/intro/introConfig";
 import { findSnapTarget, isMagneticIcon, magneticOffsets, restingBox, snapBox } from "@/lib/glass/magnet";
 
 // The cursor point: a small dot exactly on the pointer, so you can see where the lens is heading.
@@ -33,8 +32,6 @@ const LIFT = 6;
 // After the last move or scroll the lens keeps redrawing for this long (in ms), so things that
 // move under it on their own, like a card lifting or the fan being dealt, show up.
 const ACTIVE_MS = 1200;
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-const DEMO_PAUSE = 6000; // ms of a still mouse before the ?demo mode carries on
 
 export function GlassCursor() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -48,7 +45,6 @@ export function GlassCursor() {
     const reduced = matchMedia("(prefers-reduced-motion: reduce)");
     let lens: ReturnType<typeof createGlassLens> = null;
     let frame = 0, last = 0, pointerX = 0, pointerY = 0;
-    let demoPausedUntil = 0;
     let x = 0, y = 0, vx = 0, vy = 0, visible = false;
     let snapped: HTMLElement | null = null;
     // Where the snapped element was when the lens last aimed at it, to see whether it has moved.
@@ -203,7 +199,6 @@ export function GlassCursor() {
       schedule();
     };
     const move = (event: PointerEvent) => {
-      if (event.isTrusted) demoPausedUntil = performance.now() + DEMO_PAUSE; // a real hand takes over from the demo
       if (event.pointerType !== "mouse") { hide(); return; }
       update(event.clientX, event.clientY, event.target instanceof Element ? event.target : null);
     };
@@ -220,57 +215,6 @@ export function GlassCursor() {
     const leave = (event: PointerEvent) => { if (!event.relatedTarget) hide(); };
     const contextLost = (event: Event) => { event.preventDefault(); hide(); };
     const restored = () => { lens?.dispose(); lens = null; };
-    // ── Demo mode, for an open day ───────────────────────────────────────────────────────────────
-    // Open the site with ?demo and the lens roams the hero by itself: it sweeps across the letters and
-    // rests on each icon in turn, so the glass and the magnet of the icons can be seen without a mouse.
-    // A real mouse takes over at once, and the demo carries on after DEMO_PAUSE of stillness. It only
-    // runs while the hero is on screen and the intro is over. When the lens has been round all the icons
-    // the intro plays again at once (?demo=5 adds a rest of 5 seconds first), after which
-    // the lens starts over: a loop that can run all day.
-    const demoParams = new URLSearchParams(window.location.search);
-    const demoOn = demoParams.has("demo");
-    const demoRest = (Number(demoParams.get("demo")) || 0) * 1000;
-    let demoRestartAt = 0;
-    let demoStops: { x: number; y: number; dwell: number }[] = [];
-    let demoSeg = 0, demoSegStart = 0, demoRaf = 0;
-    const buildStops = (from: { x: number; y: number } | null, hero: Element) => {
-      const box = hero.getBoundingClientRect();
-      const lineY = box.top + box.height * 0.52; // along the middle of the letters
-      const icons = [...hero.querySelectorAll('[data-intro-target="sticker"]')]
-        .map((icon) => { const r = icon.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; })
-        .sort((a, b) => a.x - b.x);
-      const stops = [{ x: from?.x ?? box.left - 80, y: from?.y ?? lineY, dwell: 0 }];
-      icons.forEach((icon, index) => {
-        stops.push({ x: icon.x, y: lineY + (index % 2 ? -1 : 1) * box.height * 0.1, dwell: 0 }); // across the letters
-        stops.push({ ...icon, dwell: 1.1 }); // then rest on the icon
-      });
-      stops.push({ x: box.right + 80, y: lineY, dwell: 0.2 });
-      return stops;
-    };
-    const demoStep = (now: number) => {
-      demoRaf = requestAnimationFrame(demoStep);
-      const hero = document.querySelector("[data-hero-wordmark]");
-      if (!hero || document.documentElement.dataset.intro === "playing" || document.hidden || window.scrollY > window.innerHeight * 0.5 || now < demoPausedUntil) { demoStops = []; demoRestartAt = 0; return; }
-      if (demoRestartAt) {
-        if (now < demoRestartAt) return; // resting before the next round
-        demoRestartAt = 0;
-        window.dispatchEvent(new Event(INTRO.replayEvent));
-        return;
-      }
-      if (!demoStops.length) { demoStops = buildStops(visible ? { x: pointerX, y: pointerY } : null, hero); demoSeg = 0; demoSegStart = now; }
-      const a = demoStops[demoSeg], b = demoStops[demoSeg + 1];
-      if (!b) { demoStops = []; hide(); demoRestartAt = now + demoRest; return; } // round done: the intro again
-      const travel = Math.max(700, (Math.hypot(b.x - a.x, b.y - a.y) / 520) * 1000);
-      const t = now - demoSegStart;
-      if (t > travel + b.dwell * 1000) { demoSeg++; demoSegStart = now; return; }
-      const k = Math.min(1, t / travel);
-      const e = k * k * (3 - 2 * k); // slow at the start and the end
-      const x = clamp(a.x + (b.x - a.x) * e, 8, window.innerWidth - 8);
-      const y = clamp(a.y + (b.y - a.y) * e, 8, window.innerHeight - 8);
-      update(x, y, document.elementFromPoint(x, y));
-    };
-    if (demoOn) demoRaf = requestAnimationFrame(demoStep);
-
     window.addEventListener("click", click);
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("pointerdown", move, { passive: true });
@@ -284,7 +228,6 @@ export function GlassCursor() {
     canvas.addEventListener("webglcontextlost", contextLost);
     canvas.addEventListener("webglcontextrestored", restored);
     return () => {
-      cancelAnimationFrame(demoRaf);
       hide(); lens?.dispose();
       window.removeEventListener("click", click);
       window.removeEventListener("pointermove", move);
